@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Home,
   FolderOpen,
@@ -10,7 +9,13 @@ import {
   Code2,
 } from "lucide-react";
 
+
+
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+
+
 export default function DashboardPage() {
+  const requireAuth = useRequireAuth();
   return (
     <div className="flex min-h-screen bg-[#0d0d0d] text-white">
 
@@ -30,22 +35,22 @@ export default function DashboardPage() {
 
         <nav className="flex-1 p-4 space-y-2">
 
-          <button className="flex items-center gap-3 w-full rounded-lg px-4 py-3 hover:bg-zinc-800 transition">
+          <button onClick={requireAuth} className="flex items-center gap-3 w-full rounded-lg px-4 py-3 hover:bg-zinc-800 transition">
             <Home size={20} />
             Home
           </button>
 
-          <button className="flex items-center gap-3 w-full rounded-lg px-4 py-3 hover:bg-zinc-800 transition">
+          <button onClick={requireAuth} className="flex items-center gap-3 w-full rounded-lg px-4 py-3 hover:bg-zinc-800 transition">
             <FolderOpen size={20} />
             Projects
           </button>
 
-          <button className="flex items-center gap-3 w-full rounded-lg px-4 py-3 bg-zinc-800">
+          <button onClick={requireAuth} className="flex items-center gap-3 w-full rounded-lg px-4 py-3 bg-zinc-800">
             <Star size={20} />
             Starred
           </button>
 
-          <button className="flex items-center gap-3 w-full rounded-lg px-4 py-3 hover:bg-zinc-800 transition">
+          <button onClick={requireAuth} className="flex items-center gap-3 w-full rounded-lg px-4 py-3 hover:bg-zinc-800 transition">
             <History size={20} />
             History
           </button>
@@ -70,7 +75,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-2 gap-6">
 
-          <button className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-left hover:border-white transition">
+          <button onClick={requireAuth} className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-left hover:border-white transition">
 
             <Plus className="mb-6" size={40} />
 
@@ -84,7 +89,7 @@ export default function DashboardPage() {
 
           </button>
 
-          <button className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-left hover:border-white transition">
+          <button onClick={requireAuth} className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-left hover:border-white transition">
 
             <GitBranch className="mb-6" size={40} />
 
@@ -110,7 +115,7 @@ export default function DashboardPage() {
               Recently Viewed
             </h2>
 
-            <button className="text-sm text-zinc-400 hover:text-white">
+            <button onClick={requireAuth} className="text-sm text-zinc-400 hover:text-white">
               View All
             </button>
 
