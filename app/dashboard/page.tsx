@@ -9,8 +9,6 @@ import {
   Code2,
 } from "lucide-react";
 
-
-
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 
