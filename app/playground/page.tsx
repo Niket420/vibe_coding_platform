@@ -20,6 +20,22 @@ export default function PlaygroundPage() {
       setFileTree(tree);
     }
 
+  async function createFolder(name: string) {
+    if (!webcontainer) return;
+
+    await webcontainer.fs.mkdir(name);
+
+    await refreshFileTree(webcontainer);
+}
+
+async function createFile(path: string) {
+    if (!webcontainer) return;
+
+    await webcontainer.fs.writeFile(path, "");
+
+    await refreshFileTree(webcontainer);
+}
+
   useEffect(() => {
     async function init() {
       const wc = await getWebContainer();
@@ -52,7 +68,9 @@ return (
 
           {/* Explorer */}
           <Panel defaultSize="18%" minSize="12%">
-           <FileExplorer fileTree={fileTree} />
+           <FileExplorer fileTree={fileTree} onRefresh={() => refreshFileTree(webcontainer!)} 
+           onCreateFolder={createFolder} 
+           onCreateFile={createFile}/>
           </Panel>
 
           <Separator className="w-[2px] bg-zinc-800 hover:bg-blue-500 transition-colors cursor-col-resize" />

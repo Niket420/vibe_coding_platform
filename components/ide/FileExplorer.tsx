@@ -15,13 +15,17 @@ import {
 
 import { FileTreeNode } from "@/types/file-tree";
 
-type FileExplorerProps = {
-  fileTree: FileTreeNode[];
-};
 
 type TreeNodeProps = {
   node: FileTreeNode;
   level: number;
+};
+
+type FileExplorerProps = {
+    fileTree: FileTreeNode[];
+    onRefresh: () => Promise<void>;
+    onCreateFolder: (name: string) => Promise<void>;
+    onCreateFile: (path: string) => Promise<void>;
 };
 
 function TreeNode({ node, level }: TreeNodeProps) {
@@ -84,7 +88,7 @@ function TreeNode({ node, level }: TreeNodeProps) {
 }
 
 export default function FileExplorer({
-  fileTree,
+  fileTree, onRefresh,onCreateFolder,onCreateFile,
 }: FileExplorerProps) {
   return (
     <div className="h-full bg-[#181818] border-r border-zinc-800 flex flex-col">
@@ -101,16 +105,35 @@ export default function FileExplorer({
           <FilePlus2
             size={16}
             className="cursor-pointer hover:text-white"
+            onClick={async () => {
+
+        const name = prompt("File name");
+
+        if (!name) return;
+
+        await onCreateFile(name);
+
+    }}
           />
 
           <FolderPlus
             size={16}
             className="cursor-pointer hover:text-white"
+            onClick={async () => {
+
+              const name = prompt("Folder name");
+
+              if (!name) return;
+
+              await onCreateFolder(name);
+
+    }}
           />
 
           <RefreshCw
             size={16}
             className="cursor-pointer hover:text-white"
+            onClick={onRefresh}
           />
 
           <Ellipsis
