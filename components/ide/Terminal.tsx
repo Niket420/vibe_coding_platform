@@ -4,19 +4,36 @@ import { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { getWebContainer } from "@/lib/webcontainer";
-
+import { WebContainerProcess } from "@webcontainer/api";
 import "@xterm/xterm/css/xterm.css";
 
-export default function IDETerminal() {
+let activeProcess: WebContainerProcess | null = null;
+let processInputWriter: WritableStreamDefaultWriter<string> | null = null;
+
+type IDETerminalProps = {
+
+  onFilesystemChange: () => Promise<void>;
+
+};
+
+export default function IDETerminal({
+
+  onFilesystemChange,
+
+}: IDETerminalProps) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!terminalRef.current) return;
 
     let term: Terminal;
+    let cancelled = false;
 
     async function init() {
       const webcontainer = await getWebContainer();
+
+      // Stop if this component has already been cleaned up
+      if (cancelled) return;
 
       let currentCommand = "";
 
@@ -35,14 +52,21 @@ export default function IDETerminal() {
       term.open(terminalRef.current!);
 
       requestAnimationFrame(() => {
+        if (cancelled) return;
+
         fitAddon.fit();
 
         term.focus();
-        term.writeln("Welcome to CodeForge 🚀");
+        term.writeln("Welcome to Codeforge 🚀");
         term.write("$ ");
 
         term.onData(async (data) => {
           // ENTER
+          if (activeProcess) {
+            await processInputWriter?.write(data);
+            return;
+          }
+
           if (data === "\r") {
             term.writeln("");
 
@@ -56,46 +80,70 @@ export default function IDETerminal() {
             }
 
             try {
-              const process = await webcontainer.spawn(command, args);
 
-              process.output.pipeTo(
-                new WritableStream({
-                  write(data) {
-                    term.write(data);
-                  },
-                })
-              );
+      activeProcess = await webcontainer.spawn(command, args);
 
-              const exitCode = await process.exit;
+      processInputWriter = activeProcess.input.getWriter();
 
-              term.writeln("");
-              term.writeln(`Process exited with code ${exitCode}`);
-            } catch (err) {
-              term.writeln(`Error: ${err}`);
-            }
+      activeProcess.output.pipeTo(
+
+        new WritableStream({
+
+          write(data) {
+
+            term.write(data);
+
+          },
+
+        })
+
+      );
+
+      const exitCode = await activeProcess.exit;
+      await onFilesystemChange();
+
+      processInputWriter.releaseLock();
+
+      processInputWriter = null;
+
+      activeProcess = null;
+
+      term.writeln("");
+
+      term.writeln(`Process exited with code ${exitCode}`);
+
+    } catch (err) {
+
+      term.writeln(`Error: ${err}`);
+
+      activeProcess = null;
+
+      processInputWriter = null;
+
+    }
 
             currentCommand = "";
             term.write("$ ");
-            return;
           }
 
           // BACKSPACE
-          if (data === "\x7f") {
+          else if (data === "\x7f") {
             if (currentCommand.length > 0) {
               currentCommand = currentCommand.slice(0, -1);
               term.write("\b \b");
             }
-            return;
           }
 
-          // Ignore arrow keys and other escape sequences
-          if (data.startsWith("\x1b")) {
+          // Ignore arrow keys
+          else if (data.startsWith("\x1b")) {
             return;
           }
 
           // Normal character
-          currentCommand += data;
-          term.write(data);
+          else {
+            currentCommand += data;
+            term.write(data);
+          }
         });
       });
     }
@@ -103,6 +151,8 @@ export default function IDETerminal() {
     init();
 
     return () => {
+      cancelled = true;
+      processInputWriter?.releaseLock();
       term?.dispose();
     };
   }, []);

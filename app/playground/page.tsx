@@ -6,20 +6,25 @@ import IDEHeader from "@/components/ide/IDEHeader";
 import FileExplorer from "@/components/ide/FileExplorer";
 import Editor from "@/components/ide/Editor";
 import Preview from "@/components/ide/Preview";
-import Terminal from "@/components/ide/Terminal";
-import {
-  Group,
-  Panel,
-  Separator,
-} from "react-resizable-panels";
+import IDETerminal from "@/components/ide/Terminal";
+import {Group, Panel, Separator} from "react-resizable-panels";
+import {readDirectory} from "@/lib/filesystem"
+
 
 export default function PlaygroundPage() {
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
+  const [fileTree, setFileTree] = useState<FileTreeNode[]>([]);
+
+  async function refreshFileTree(wc: WebContainer) {
+      const tree = await readDirectory(wc, ".");
+      setFileTree(tree);
+    }
 
   useEffect(() => {
     async function init() {
       const wc = await getWebContainer();
       setWebcontainer(wc);
+      await refreshFileTree(wc);
     }
 
     init();
@@ -47,7 +52,7 @@ return (
 
           {/* Explorer */}
           <Panel defaultSize="18%" minSize="12%">
-            <FileExplorer />
+           <FileExplorer fileTree={fileTree} />
           </Panel>
 
           <Separator className="w-[2px] bg-zinc-800 hover:bg-blue-500 transition-colors cursor-col-resize" />
@@ -72,7 +77,8 @@ return (
 
       {/* Terminal */}
       <Panel defaultSize="25%" minSize="12%">
-        <Terminal />
+       <IDETerminal onFilesystemChange={() => refreshFileTree(webcontainer!)}
+/>
       </Panel>
 
     </Group>
