@@ -1,112 +1,85 @@
-// "use client";
+"use client";
 
-// import {
-//   ChevronDown,
-//   FilePlus,
-//   FolderPlus,
-//   RefreshCw,
-//   ChevronsDown,
-// } from "lucide-react";
+import { useState } from "react";
+import {
+  ChevronRight,
+  ChevronDown,
+  Folder,
+  FolderOpen,
+  File,
+  FolderPlus,
+  FilePlus2,
+  RefreshCw,
+  Ellipsis,
+} from "lucide-react";
 
-// export default function FileExplorer() {
-//   function handleNewFile() {
-//     console.log("New File");
-//   }
-
-//   function handleNewFolder() {
-//     console.log("New Folder");
-//   }
-
-//   function handleRefresh() {
-//     console.log("Refresh");
-//   }
-
-//   function handleCollapseAll() {
-//     console.log("Collapse All");
-//   }
-
-//   return (
-//     <div className="h-full bg-[#181818] text-gray-300 border-r border-zinc-800">
-//       {/* Explorer Header */}
-//       <div className="flex items-center justify-between h-10 px-3 border-b border-zinc-800">
-//         <h2 className="text-xs font-semibold tracking-wider text-gray-400">
-//           EXPLORER
-//         </h2>
-
-//         <div className="flex items-center gap-2">
-//           <button
-//             onClick={handleNewFile}
-//             className="p-1 rounded hover:bg-zinc-700"
-//           >
-//             <FilePlus size={16} />
-//           </button>
-
-//           <button
-//             onClick={handleNewFolder}
-//             className="p-1 rounded hover:bg-zinc-700"
-//           >
-//             <FolderPlus size={16} />
-//           </button>
-
-//           <button
-//             onClick={handleRefresh}
-//             className="p-1 rounded hover:bg-zinc-700"
-//           >
-//             <RefreshCw size={16} />
-//           </button>
-
-//           <button
-//             onClick={handleCollapseAll}
-//             className="p-1 rounded hover:bg-zinc-700"
-//           >
-//             <ChevronsDown size={16} />
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Project Header */}
-//       <div className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-zinc-800">
-//         <ChevronDown size={16} />
-
-//         <span className="font-medium text-[15px]">Projects</span>
-//       </div>
-
-//       {/* Tree will come here */}
-//     </div>
-//   );
-// }
 import { FileTreeNode } from "@/types/file-tree";
 
 type FileExplorerProps = {
   fileTree: FileTreeNode[];
 };
 
-function Tree({ nodes, level = 0 }: { nodes: FileTreeNode[]; level?: number }) {
-  const filteredNodes = nodes.filter(
-  (node) => node.name !== "node_modules"
-);
-  return (
-    <>
-      {filteredNodes.map((node) => (
-        <div key={`${level}-${node.name}`}>
-          <div
-            style={{ paddingLeft: `${level * 16}px` }}
-            className="py-1"
-          >
-            {node.type === "directory" ? "📁" : "📄"} {node.name}
-          </div>
+type TreeNodeProps = {
+  node: FileTreeNode;
+  level: number;
+};
 
-          {node.type === "directory" &&
-            node.children &&
-            node.children.length > 0 && (
-              <Tree
-                nodes={node.children}
-                level={level + 1}
-              />
-            )}
-        </div>
-      ))}
-    </>
+function TreeNode({ node, level }: TreeNodeProps) {
+  const [expanded, setExpanded] = useState(true);
+
+  const isDirectory = node.type === "directory";
+
+  // Hide node_modules
+  if (node.name === "node_modules") {
+    return null;
+  }
+
+  return (
+    <div>
+      <div
+        className="flex items-center gap-1 h-7 px-2 cursor-pointer hover:bg-zinc-800 select-none text-sm text-zinc-200"
+        style={{
+          paddingLeft: `${level * 16 + 8}px`,
+        }}
+        onClick={() => {
+          if (isDirectory) {
+            setExpanded(!expanded);
+          }
+        }}
+      >
+        {isDirectory ? (
+          expanded ? (
+            <ChevronDown size={16} />
+          ) : (
+            <ChevronRight size={16} />
+          )
+        ) : (
+          <div className="w-4" />
+        )}
+
+        {isDirectory ? (
+          expanded ? (
+            <FolderOpen size={16} />
+          ) : (
+            <Folder size={16} />
+          )
+        ) : (
+          <File size={16} />
+        )}
+
+        <span>{node.name}</span>
+      </div>
+
+      {isDirectory &&
+        expanded &&
+        node.children?.map((child) => (
+          <TreeNode
+            key={child.name}
+            node={child}
+            level={level + 1}
+          />
+        ))}
+    </div>
   );
 }
 
@@ -114,8 +87,54 @@ export default function FileExplorer({
   fileTree,
 }: FileExplorerProps) {
   return (
-    <div className="h-full overflow-auto text-sm text-white p-2">
-      <Tree nodes={fileTree} />
+    <div className="h-full bg-[#181818] border-r border-zinc-800 flex flex-col">
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 h-10 border-b border-zinc-800">
+
+        <span className="text-xs tracking-widest font-semibold text-zinc-400">
+          EXPLORER
+        </span>
+
+        <div className="flex items-center gap-2 text-zinc-400">
+
+          <FilePlus2
+            size={16}
+            className="cursor-pointer hover:text-white"
+          />
+
+          <FolderPlus
+            size={16}
+            className="cursor-pointer hover:text-white"
+          />
+
+          <RefreshCw
+            size={16}
+            className="cursor-pointer hover:text-white"
+          />
+
+          <Ellipsis
+            size={16}
+            className="cursor-pointer hover:text-white"
+          />
+
+        </div>
+      </div>
+
+      {/* Tree */}
+
+      <div className="overflow-auto py-2">
+
+        {fileTree.map((node) => (
+          <TreeNode
+            key={node.name}
+            node={node}
+            level={0}
+          />
+        ))}
+
+      </div>
+
     </div>
   );
 }
