@@ -15,20 +15,25 @@ import {
 
 import { FileTreeNode } from "@/types/file-tree";
 
-
 type TreeNodeProps = {
   node: FileTreeNode;
   level: number;
+  onOpenFile: (path: string) => Promise<void>;
 };
 
 type FileExplorerProps = {
-    fileTree: FileTreeNode[];
-    onRefresh: () => Promise<void>;
-    onCreateFolder: (name: string) => Promise<void>;
-    onCreateFile: (path: string) => Promise<void>;
+  fileTree: FileTreeNode[];
+  onRefresh: () => Promise<void>;
+  onCreateFolder: (path: string) => Promise<void>;
+  onCreateFile: (path: string) => Promise<void>;
+  onOpenFile: (path: string) => Promise<void>;
 };
 
-function TreeNode({ node, level }: TreeNodeProps) {
+function TreeNode({
+  node,
+  level,
+  onOpenFile,
+}: TreeNodeProps) {
   const [expanded, setExpanded] = useState(true);
 
   const isDirectory = node.type === "directory";
@@ -45,10 +50,13 @@ function TreeNode({ node, level }: TreeNodeProps) {
         style={{
           paddingLeft: `${level * 16 + 8}px`,
         }}
-        onClick={() => {
+        onClick={async () => {
           if (isDirectory) {
             setExpanded(!expanded);
+            return;
           }
+
+          await onOpenFile(node.path);
         }}
       >
         {isDirectory ? (
@@ -78,9 +86,10 @@ function TreeNode({ node, level }: TreeNodeProps) {
         expanded &&
         node.children?.map((child) => (
           <TreeNode
-            key={child.name}
+            key={child.path}
             node={child}
             level={level + 1}
+            onOpenFile={onOpenFile}
           />
         ))}
     </div>
@@ -88,46 +97,43 @@ function TreeNode({ node, level }: TreeNodeProps) {
 }
 
 export default function FileExplorer({
-  fileTree, onRefresh,onCreateFolder,onCreateFile,
+  fileTree,
+  onRefresh,
+  onCreateFolder,
+  onCreateFile,
+  onOpenFile,
 }: FileExplorerProps) {
   return (
     <div className="h-full bg-[#181818] border-r border-zinc-800 flex flex-col">
-
       {/* Header */}
       <div className="flex items-center justify-between px-3 h-10 border-b border-zinc-800">
-
         <span className="text-xs tracking-widest font-semibold text-zinc-400">
           EXPLORER
         </span>
 
         <div className="flex items-center gap-2 text-zinc-400">
-
           <FilePlus2
             size={16}
             className="cursor-pointer hover:text-white"
             onClick={async () => {
+              const name = prompt("File name");
 
-        const name = prompt("File name");
+              if (!name) return;
 
-        if (!name) return;
-
-        await onCreateFile(name);
-
-    }}
+              await onCreateFile(name);
+            }}
           />
 
           <FolderPlus
             size={16}
             className="cursor-pointer hover:text-white"
             onClick={async () => {
-
               const name = prompt("Folder name");
 
               if (!name) return;
 
               await onCreateFolder(name);
-
-    }}
+            }}
           />
 
           <RefreshCw
@@ -140,24 +146,20 @@ export default function FileExplorer({
             size={16}
             className="cursor-pointer hover:text-white"
           />
-
         </div>
       </div>
 
       {/* Tree */}
-
       <div className="overflow-auto py-2">
-
         {fileTree.map((node) => (
           <TreeNode
-            key={node.name}
+            key={node.path}
             node={node}
             level={0}
+            onOpenFile={onOpenFile}
           />
         ))}
-
       </div>
-
     </div>
   );
 }
