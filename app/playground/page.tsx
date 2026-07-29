@@ -23,6 +23,7 @@ import {
 type OpenFile = {
   path: string;
   content: string;
+  isDirty: boolean;
 };
 
 export default function PlaygroundPage() {
@@ -36,6 +37,7 @@ export default function PlaygroundPage() {
     useState<OpenFile>({
       path: "",
       content: "",
+      isDirty: false,
     });
 
   async function refreshFileTree(wc: WebContainer) {
@@ -70,6 +72,7 @@ export default function PlaygroundPage() {
     setCurrentFile({
       path,
       content,
+       isDirty: false,
     });
   }
 
@@ -120,7 +123,7 @@ export default function PlaygroundPage() {
 
             {/* Editor */}
             <Panel defaultSize="52%" minSize="20%">
-              <Editor value={currentFile.content} />
+              <Editor   currentFile={currentFile} setCurrentFile={setCurrentFile}/>
             </Panel>
 
             <Separator className="w-[2px] bg-zinc-800 hover:bg-blue-500 transition-colors cursor-col-resize" />
