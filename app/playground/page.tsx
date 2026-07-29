@@ -33,12 +33,9 @@ export default function PlaygroundPage() {
   const [fileTree, setFileTree] =
     useState<FileTreeNode[]>([]);
 
-  const [currentFile, setCurrentFile] =
-    useState<OpenFile>({
-      path: "",
-      content: "",
-      isDirty: false,
-    });
+  const [openedFiles, setOpenedFiles] = useState<OpenFile[]>([]);
+
+  const [activeFilePath, setActiveFilePath] = useState("");
 
   async function refreshFileTree(wc: WebContainer) {
     const tree = await readDirectory(wc, ".");
@@ -62,21 +59,39 @@ export default function PlaygroundPage() {
   }
 
   async function openFile(path: string) {
-    if (!webcontainer) return;
+  if (!webcontainer) return;
 
-    const content = await webcontainer.fs.readFile(
-      path,
-      "utf-8"
-    );
+  // Already opened
+  const existing = openedFiles.find(
+    (file) => file.path === path
+  );
 
-    setCurrentFile({
-      path,
-      content,
-       isDirty: false,
-    });
+  if (existing) {
+    setActiveFilePath(path);
+    return;
   }
 
+  // Read from WebContainer
+  const content = await webcontainer.fs.readFile(
+    path,
+    "utf-8"
+  );
+
+  const file: OpenFile = {
+    path,
+    content,
+    isDirty: false,
+  };
+
+  setOpenedFiles((prev) => [...prev, file]);
+
+  setActiveFilePath(path);
+}
+
+
+
   useEffect(() => {
+    
     async function init() {
       const wc = await getWebContainer();
 
@@ -88,9 +103,7 @@ export default function PlaygroundPage() {
     init();
   }, []);
 
-  useEffect(() => {
-    console.log(currentFile);
-  }, [currentFile]);
+ 
 
   if (!webcontainer) {
     return <div>Loading IDE...</div>;
@@ -123,7 +136,12 @@ export default function PlaygroundPage() {
 
             {/* Editor */}
             <Panel defaultSize="52%" minSize="20%">
-              <Editor   currentFile={currentFile} setCurrentFile={setCurrentFile}/>
+              <Editor
+                openedFiles={openedFiles}
+                setOpenedFiles={setOpenedFiles}
+                activeFilePath={activeFilePath}
+                setActiveFilePath={setActiveFilePath}
+              />
             </Panel>
 
             <Separator className="w-[2px] bg-zinc-800 hover:bg-blue-500 transition-colors cursor-col-resize" />
