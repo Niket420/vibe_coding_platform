@@ -33,9 +33,15 @@ export default function PlaygroundPage() {
   const [fileTree, setFileTree] =
     useState<FileTreeNode[]>([]);
 
-  const [openedFiles, setOpenedFiles] = useState<OpenFile[]>([]);
+  const [openedFiles, setOpenedFiles] =
+    useState<OpenFile[]>([]);
 
-  const [activeFilePath, setActiveFilePath] = useState("");
+  const [activeFilePath, setActiveFilePath] =
+    useState("");
+
+  const [bottomPanel, setBottomPanel] = useState<
+    "terminal" | "preview"
+  >("terminal");
 
   async function refreshFileTree(wc: WebContainer) {
     const tree = await readDirectory(wc, ".");
@@ -46,7 +52,6 @@ export default function PlaygroundPage() {
     if (!webcontainer) return;
 
     await webcontainer.fs.mkdir(path);
-
     await refreshFileTree(webcontainer);
   }
 
@@ -54,44 +59,37 @@ export default function PlaygroundPage() {
     if (!webcontainer) return;
 
     await webcontainer.fs.writeFile(path, "");
-
     await refreshFileTree(webcontainer);
   }
 
   async function openFile(path: string) {
-  if (!webcontainer) return;
+    if (!webcontainer) return;
 
-  // Already opened
-  const existing = openedFiles.find(
-    (file) => file.path === path
-  );
+    const existing = openedFiles.find(
+      (file) => file.path === path
+    );
 
-  if (existing) {
+    if (existing) {
+      setActiveFilePath(path);
+      return;
+    }
+
+    const content = await webcontainer.fs.readFile(
+      path,
+      "utf-8"
+    );
+
+    const file: OpenFile = {
+      path,
+      content,
+      isDirty: false,
+    };
+
+    setOpenedFiles((prev) => [...prev, file]);
     setActiveFilePath(path);
-    return;
   }
 
-  // Read from WebContainer
-  const content = await webcontainer.fs.readFile(
-    path,
-    "utf-8"
-  );
-
-  const file: OpenFile = {
-    path,
-    content,
-    isDirty: false,
-  };
-
-  setOpenedFiles((prev) => [...prev, file]);
-
-  setActiveFilePath(path);
-}
-
-
-
   useEffect(() => {
-    
     async function init() {
       const wc = await getWebContainer();
 
@@ -102,8 +100,6 @@ export default function PlaygroundPage() {
 
     init();
   }, []);
-
- 
 
   if (!webcontainer) {
     return <div>Loading IDE...</div>;
@@ -117,15 +113,20 @@ export default function PlaygroundPage() {
       </div>
 
       {/* IDE */}
-      <Group orientation="vertical" className="flex-1">
-        {/* Top */}
-        <Panel defaultSize="75%">
+      <Group
+        orientation="vertical"
+        className="flex-1"
+      >
+        {/* Top Section */}
+        <Panel defaultSize={75}>
           <Group>
             {/* Explorer */}
-            <Panel defaultSize="18%" minSize="12%">
+            <Panel defaultSize={18} minSize={12}>
               <FileExplorer
                 fileTree={fileTree}
-                onRefresh={() => refreshFileTree(webcontainer)}
+                onRefresh={() =>
+                  refreshFileTree(webcontainer)
+                }
                 onCreateFolder={createFolder}
                 onCreateFile={createFile}
                 onOpenFile={openFile}
@@ -135,7 +136,7 @@ export default function PlaygroundPage() {
             <Separator className="w-[2px] bg-zinc-800 hover:bg-blue-500 transition-colors cursor-col-resize" />
 
             {/* Editor */}
-            <Panel defaultSize="52%" minSize="20%">
+            <Panel defaultSize={82} minSize={20}>
               <Editor
                 webcontainer={webcontainer}
                 openedFiles={openedFiles}
@@ -144,25 +145,56 @@ export default function PlaygroundPage() {
                 setActiveFilePath={setActiveFilePath}
               />
             </Panel>
-
-            <Separator className="w-[2px] bg-zinc-800 hover:bg-blue-500 transition-colors cursor-col-resize" />
-
-            {/* Preview */}
-            <Panel defaultSize="30%" minSize="20%">
-              <Preview />
-            </Panel>
           </Group>
         </Panel>
 
         <Separator className="h-[2px] bg-zinc-800 hover:bg-blue-500 transition-colors cursor-row-resize" />
 
-        {/* Terminal */}
-        <Panel defaultSize="25%" minSize="12%">
-          <IDETerminal
-            onFilesystemChange={() =>
-              refreshFileTree(webcontainer)
-            }
-          />
+        {/* Bottom Section */}
+        <Panel defaultSize={25} minSize={12}>
+          <div className="h-full flex flex-col bg-[#181818]">
+            {/* Tabs */}
+            <div className="h-9 flex items-center border-b border-zinc-800 bg-[#252526]">
+              <button
+                onClick={() =>
+                  setBottomPanel("terminal")
+                }
+                className={`px-4 h-full text-sm transition-colors ${
+                  bottomPanel === "terminal"
+                    ? "bg-[#1e1e1e] text-white border-t-2 border-blue-500"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Terminal
+              </button>
+
+              <button
+                onClick={() =>
+                  setBottomPanel("preview")
+                }
+                className={`px-4 h-full text-sm transition-colors ${
+                  bottomPanel === "preview"
+                    ? "bg-[#1e1e1e] text-white border-t-2 border-blue-500"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-hidden">
+              {bottomPanel === "terminal" ? (
+                <IDETerminal
+                  onFilesystemChange={() =>
+                    refreshFileTree(webcontainer)
+                  }
+                />
+              ) : (
+                <Preview />
+              )}
+            </div>
+          </div>
         </Panel>
       </Group>
     </div>
