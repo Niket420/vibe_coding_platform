@@ -137,6 +137,7 @@ export default function PlaygroundPage() {
             {/* Editor */}
             <Panel defaultSize="52%" minSize="20%">
               <Editor
+                webcontainer={webcontainer}
                 openedFiles={openedFiles}
                 setOpenedFiles={setOpenedFiles}
                 activeFilePath={activeFilePath}

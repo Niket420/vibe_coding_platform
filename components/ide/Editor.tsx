@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MonacoEditor from "@monaco-editor/react";
 import { X } from "lucide-react";
+import SaveDialog from "./SaveDialog";
+import { WebContainer } from "@webcontainer/api";
 
 type OpenFile = {
   path: string;
@@ -11,6 +13,7 @@ type OpenFile = {
 };
 
 type EditorProps = {
+  webcontainer: WebContainer | null;
   openedFiles: OpenFile[];
   setOpenedFiles: React.Dispatch<
     React.SetStateAction<OpenFile[]>
@@ -22,12 +25,14 @@ type EditorProps = {
 };
 
 export default function Editor({
+  webcontainer,
   openedFiles,
   setOpenedFiles,
   activeFilePath,
   setActiveFilePath,
 }: EditorProps) {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+  const [pendingClosePath, setPendingClosePath] =  useState<string | null>(null);
 
   const currentFile =
     openedFiles.find(
@@ -42,6 +47,7 @@ export default function Editor({
 
   // Save dialog comes next.
   if (file.isDirty) {
+    setPendingClosePath(path);
     return;
   }
 
@@ -69,6 +75,75 @@ export default function Editor({
   setActiveFilePath(nextFile.path);
 }
 
+function forceCloseTab(path: string) {
+  const remainingFiles = openedFiles.filter(
+    (f) => f.path !== path
+  );
+
+  setOpenedFiles(remainingFiles);
+
+  if (activeFilePath !== path) return;
+
+  if (remainingFiles.length === 0) {
+    setActiveFilePath("");
+    return;
+  }
+
+  const closedIndex = openedFiles.findIndex(
+    (f) => f.path === path
+  );
+
+  const nextFile =
+    remainingFiles[closedIndex] ??
+    remainingFiles[closedIndex - 1];
+
+  setActiveFilePath(nextFile.path);
+}
+
+async function saveFile(path: string) {
+  if (!webcontainer) return;
+
+  const file = openedFiles.find((f) => f.path === path);
+
+  if (!file) return;
+
+  await webcontainer.fs.writeFile(path, file.content);
+
+  setOpenedFiles((prev) =>
+    prev.map((f) =>
+      f.path === path
+        ? {
+            ...f,
+            isDirty: false,
+          }
+        : f
+    )
+  );
+}
+
+useEffect(() => {
+  function handleKeyDown(e: KeyboardEvent) {
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      e.key.toLowerCase() === "s"
+    ) {
+      e.preventDefault();
+
+      if (!activeFilePath) return;
+
+      saveFile(activeFilePath);
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener(
+      "keydown",
+      handleKeyDown
+    );
+  };
+}, [activeFilePath, openedFiles, webcontainer]);
 
   return (
     <div className="h-full flex flex-col">
@@ -164,6 +239,26 @@ export default function Editor({
           </div>
         )}
       </div>
+      {pendingClosePath && (
+  <SaveDialog
+    fileName={pendingClosePath.split("/").pop()!}
+    onCancel={() => setPendingClosePath(null)}
+    onDiscard={() => {
+      forceCloseTab(pendingClosePath);
+      setPendingClosePath(null);
+    }}
+    onSave={async () => {
+      if (!pendingClosePath) return;
+
+      await saveFile(pendingClosePath);
+
+      forceCloseTab(pendingClosePath);
+
+      setPendingClosePath(null);
+    }}
+  />
+)}
     </div>
+    
   );
 }
