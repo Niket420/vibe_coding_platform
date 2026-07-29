@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import MonacoEditor from "@monaco-editor/react";
+import { X } from "lucide-react";
 
 type OpenFile = {
   path: string;
@@ -25,36 +27,110 @@ export default function Editor({
   activeFilePath,
   setActiveFilePath,
 }: EditorProps) {
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null);
+
   const currentFile =
     openedFiles.find(
       (file) => file.path === activeFilePath
     ) ?? null;
 
+   
+  function closeTab(path: string) {
+  const file = openedFiles.find((f) => f.path === path);
+
+  if (!file) return;
+
+  // Save dialog comes next.
+  if (file.isDirty) {
+    return;
+  }
+
+  const remainingFiles = openedFiles.filter(
+    (f) => f.path !== path
+  );
+
+  setOpenedFiles(remainingFiles);
+
+  if (activeFilePath !== path) return;
+
+  if (remainingFiles.length === 0) {
+    setActiveFilePath("");
+    return;
+  }
+
+  const closedIndex = openedFiles.findIndex(
+    (f) => f.path === path
+  );
+
+  const nextFile =
+    remainingFiles[closedIndex] ??
+    remainingFiles[closedIndex - 1];
+
+  setActiveFilePath(nextFile.path);
+}
+
+
   return (
     <div className="h-full flex flex-col">
       {/* Tabs */}
-      <div className="h-9 flex border-b border-zinc-800 bg-[#252526] overflow-x-auto">
-        {openedFiles.map((file) => (
-          <div
-            key={file.path}
-            onClick={() => setActiveFilePath(file.path)}
-            className={`flex items-center gap-2 px-4 cursor-pointer border-r border-zinc-800 text-sm whitespace-nowrap ${
-              file.path === activeFilePath
-                ? "bg-[#1e1e1e] text-white"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            <span>{file.path.split("/").pop()}</span>
+      <div className="h-9 flex bg-[#252526] border-b border-zinc-800 overflow-x-auto overflow-y-hidden">
+        {openedFiles.map((file) => {
+          const isActive = file.path === activeFilePath;
 
-            {file.isDirty && (
-              <span className="text-zinc-400">●</span>
-            )}
-          </div>
-        ))}
+          return (
+            <div
+              key={file.path}
+              onClick={() => setActiveFilePath(file.path)}
+              onMouseEnter={() => setHoveredTab(file.path)}
+              onMouseLeave={() => setHoveredTab(null)}
+              className={`
+                relative
+                flex
+                items-center
+                justify-between
+                min-w-[140px]
+                max-w-[220px]
+                h-full
+                px-3
+                border-r
+                border-zinc-800
+                cursor-pointer
+                select-none
+                transition-colors
+                ${
+                  isActive
+                    ? "bg-[#1e1e1e] text-white border-t-2 border-t-blue-500 border-b-[#1e1e1e]"
+                    : "bg-[#2d2d2d] text-zinc-400 hover:bg-[#252526] hover:text-white"
+                }
+              `}
+            >
+              <span className="truncate text-[13px]">
+                {file.path.split("/").pop()}
+              </span>
+
+              <div className="w-4 flex items-center justify-center">
+                {hoveredTab === file.path ? (
+                  <X
+  size={13}
+  onClick={(e) => {
+    e.stopPropagation();
+    closeTab(file.path);
+  }}
+  className="text-zinc-400 hover:text-white"
+/>
+                ) : file.isDirty ? (
+                  <span className="text-[10px] text-zinc-400">
+                    ●
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Monaco */}
-      <div className="flex-1">
+      <div className="flex-1 bg-[#1e1e1e]">
         {currentFile ? (
           <MonacoEditor
             height="100%"
