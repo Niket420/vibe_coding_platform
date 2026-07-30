@@ -1,23 +1,183 @@
+import {
+  ArrowRight,
+  Braces,
+  Check,
+  Code2,
+  Command,
+  Files,
+  Play,
+  Sparkles,
+  TerminalSquare,
+} from "lucide-react";
+import {
+  Show,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
 import Link from "next/link";
+
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-black text-white flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <h1 className="text-6xl font-bold">
-          CodeForge
-        </h1>
+    <main className="min-h-screen overflow-hidden bg-[#0b0d10] text-[#e6edf3]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[560px] bg-[radial-gradient(circle_at_50%_-15%,rgba(0,122,204,0.26),transparent_58%)]" />
 
-        <p className="text-zinc-400 text-lg">
-          Browser IDE with AI-powered vibe coding.
-        </p>
+      <nav className="relative z-10 mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
+        <Link href="/" className="group flex items-center gap-3">
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#007acc] shadow-[0_0_28px_rgba(0,122,204,0.38)] transition group-hover:scale-105">
+            <Code2 size={20} strokeWidth={2.3} />
+          </span>
+          <span className="text-base font-semibold tracking-tight text-white">
+            CodeForge
+          </span>
+        </Link>
 
-        <Link
-  href="/dashboard"
-  className="bg-white text-black px-6 py-3 rounded-lg font-medium hover:bg-zinc-200 transition"
->
-  Get Started
-</Link>
-      </div>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Show when="signed-out">
+            <SignInButton>
+              <button className="hidden rounded-md px-3 py-2 text-sm font-medium text-[#c9d1d9] transition hover:bg-white/6 hover:text-white sm:inline-flex">
+                Sign in
+              </button>
+            </SignInButton>
+            <SignUpButton>
+              <button className="inline-flex items-center gap-2 rounded-md bg-[#007acc] px-3.5 py-2 text-sm font-semibold text-white shadow-lg shadow-[#007acc]/20 transition hover:bg-[#1685d1] sm:px-4">
+                Start coding
+                <ArrowRight size={15} />
+              </button>
+            </SignUpButton>
+          </Show>
+          <Show when="signed-in">
+            <Link
+              href="/dashboard"
+              className="hidden rounded-md px-3 py-2 text-sm font-medium text-[#c9d1d9] transition hover:bg-white/6 hover:text-white sm:inline-flex"
+            >
+              Dashboard
+            </Link>
+            <UserButton />
+          </Show>
+        </div>
+      </nav>
+
+      <section className="relative z-10 mx-auto grid max-w-7xl items-center gap-14 px-5 pb-18 pt-16 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:pb-28 lg:pt-24">
+        <div className="max-w-2xl">
+          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#2a3947] bg-[#121820]/85 px-3 py-1.5 text-xs font-medium text-[#8bc7f3] shadow-sm">
+            <Sparkles size={14} className="text-[#4fc1ff]" />
+            Your focused browser workspace
+          </div>
+
+          <h1 className="text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-white sm:text-6xl lg:text-[4.25rem]">
+            Make an idea real
+            <span className="block bg-gradient-to-r from-[#4fc1ff] via-[#7db8ff] to-[#b998ff] bg-clip-text text-transparent">
+              without leaving flow.
+            </span>
+          </h1>
+
+          <p className="mt-6 max-w-xl text-pretty text-base leading-7 text-[#9da9b5] sm:text-lg">
+            CodeForge pairs a familiar VS Code-inspired workspace with an in-browser terminal and a fast, distraction-free editor.
+          </p>
+
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/dashboard"
+              className="group inline-flex items-center justify-center gap-2 rounded-md bg-[#007acc] px-5 py-3 text-sm font-semibold text-white shadow-xl shadow-[#007acc]/20 transition hover:bg-[#1685d1]"
+            >
+              Open your workspace
+              <ArrowRight size={16} className="transition group-hover:translate-x-0.5" />
+            </Link>
+            <a
+              href="#workspace"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-[#30363d] bg-[#161b22]/80 px-5 py-3 text-sm font-medium text-[#c9d1d9] transition hover:border-[#4b5563] hover:bg-[#1c2128] hover:text-white"
+            >
+              <Play size={15} fill="currentColor" />
+              Explore the workspace
+            </a>
+          </div>
+
+          <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-[#8b949e]">
+            {[
+              "Browser-native terminal",
+              "Monaco-powered editing",
+              "Your work, in one place",
+            ].map((item) => (
+              <span key={item} className="flex items-center gap-2">
+                <Check size={15} className="text-[#3fb950]" />
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div id="workspace" className="relative mx-auto w-full max-w-2xl lg:max-w-none">
+          <div className="absolute -inset-6 rounded-[2rem] bg-[#007acc]/10 blur-3xl" />
+          <div className="relative overflow-hidden rounded-xl border border-[#30363d] bg-[#11161d] shadow-2xl shadow-black/45 ring-1 ring-white/5">
+            <div className="flex h-10 items-center border-b border-[#2b3139] bg-[#171c23] px-3">
+              <div className="flex gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#f14c4c]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#cca700]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#3fb950]" />
+              </div>
+              <div className="mx-auto rounded-md border border-[#30363d] bg-[#0d1117] px-4 py-1 font-mono text-[10px] text-[#8b949e]">
+                portfolio.tsx — CodeForge
+              </div>
+              <Command size={14} className="text-[#8b949e]" />
+            </div>
+
+            <div className="grid min-h-[360px] grid-cols-[44px_140px_minmax(0,1fr)] sm:min-h-[420px] sm:grid-cols-[48px_170px_minmax(0,1fr)]">
+              <aside className="flex flex-col items-center gap-5 border-r border-[#2b3139] bg-[#151a21] py-4 text-[#7f8791]">
+                <Files size={20} className="text-white" />
+                <span className="relative">
+                  <Braces size={19} />
+                  <span className="absolute -left-3 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-full bg-[#007acc]" />
+                </span>
+                <TerminalSquare size={19} />
+                <Sparkles size={19} />
+              </aside>
+
+              <aside className="border-r border-[#2b3139] bg-[#11161d] py-4 font-mono text-[10px] sm:text-xs">
+                <div className="mb-4 flex items-center justify-between px-3 text-[10px] font-semibold tracking-[0.13em] text-[#aeb8c2]">
+                  EXPLORER
+                  <span className="text-base font-normal text-[#7f8791]">···</span>
+                </div>
+                <div className="px-3 text-[#c9d1d9]">⌄ &nbsp; MY-PORTFOLIO</div>
+                <div className="mt-2 space-y-1 text-[#8b949e]">
+                  <div className="px-5">⌄ &nbsp; app</div>
+                  <div className="bg-[#1f2934] px-7 py-1 text-[#e6edf3]">⌘ &nbsp; page.tsx</div>
+                  <div className="px-7"># &nbsp; globals.css</div>
+                  <div className="px-5">⌄ &nbsp; components</div>
+                  <div className="px-7">⌘ &nbsp; hero.tsx</div>
+                  <div className="px-3 pt-2">◈ &nbsp; package.json</div>
+                </div>
+              </aside>
+
+              <div className="min-w-0 bg-[#0d1117] font-mono text-[10px] leading-6 sm:text-xs sm:leading-7">
+                <div className="flex h-9 items-end border-b border-[#2b3139] bg-[#11161d] text-[#c9d1d9]">
+                  <span className="flex h-full items-center gap-2 border-t-2 border-[#007acc] bg-[#0d1117] px-3">
+                    <span className="text-[#61dafb]">⌘</span>
+                    page.tsx
+                    <span className="hidden text-[#6e7681] sm:inline">×</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-[28px_minmax(0,1fr)] px-2 py-4 text-[#c9d1d9] sm:grid-cols-[34px_minmax(0,1fr)]">
+                  <div className="select-none text-right text-[#484f58]">1<br />2<br />3<br />4<br />5<br />6<br />7<br />8</div>
+                  <div className="overflow-hidden pl-3 text-left">
+                    <div><span className="text-[#ff7b72]">export default function</span> <span className="text-[#d2a8ff]">Portfolio</span>()</div>
+                    <div className="text-[#c9d1d9]">&nbsp;&nbsp;<span className="text-[#ff7b72]">return</span> (</div>
+                    <div>&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[#7ee787]">&lt;main</span> <span className="text-[#79c0ff]">className</span>=<span className="text-[#a5d6ff]">&quot;space-y-8&quot;</span><span className="text-[#7ee787]">&gt;</span></div>
+                    <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[#7ee787]">&lt;Hero</span> <span className="text-[#79c0ff]">title</span>=<span className="text-[#a5d6ff]">&quot;Hello, world&quot;</span> <span className="text-[#7ee787]">/&gt;</span></div>
+                    <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[#7ee787]">&lt;Projects</span> <span className="text-[#79c0ff]">featured</span> <span className="text-[#7ee787]">/&gt;</span></div>
+                    <div>&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-[#7ee787]">&lt;/main&gt;</span></div>
+                    <div>&nbsp;&nbsp;)</div>
+                  </div>
+                </div>
+                <div className="mt-auto flex items-center justify-between border-t border-[#2b3139] bg-[#11161d] px-3 py-1.5 text-[9px] text-[#8b949e] sm:text-[10px]">
+                  <span>main*</span>
+                  <span>TypeScript React &nbsp; • &nbsp; UTF-8 &nbsp; • &nbsp; Ln 1, Col 1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

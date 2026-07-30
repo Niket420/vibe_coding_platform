@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import MonacoEditor from "@monaco-editor/react";
-import { X } from "lucide-react";
-import SaveDialog from "./SaveDialog";
+import { FileCode2, X } from "lucide-react";
 import { WebContainer } from "@webcontainer/api";
+import SaveDialog from "./SaveDialog";
 
 type OpenFile = {
   path: string;
@@ -15,14 +15,29 @@ type OpenFile = {
 type EditorProps = {
   webcontainer: WebContainer | null;
   openedFiles: OpenFile[];
-  setOpenedFiles: React.Dispatch<
-    React.SetStateAction<OpenFile[]>
-  >;
+  setOpenedFiles: React.Dispatch<React.SetStateAction<OpenFile[]>>;
   activeFilePath: string;
-  setActiveFilePath: React.Dispatch<
-    React.SetStateAction<string>
-  >;
+  setActiveFilePath: React.Dispatch<React.SetStateAction<string>>;
 };
+
+const languagesByExtension: Record<string, string> = {
+  css: "css",
+  html: "html",
+  js: "javascript",
+  json: "json",
+  jsx: "javascript",
+  md: "markdown",
+  ts: "typescript",
+  tsx: "typescript",
+  xml: "xml",
+  yml: "yaml",
+  yaml: "yaml",
+};
+
+function languageForPath(path: string) {
+  const extension = path.split(".").pop()?.toLowerCase() ?? "";
+  return languagesByExtension[extension] ?? "plaintext";
+}
 
 export default function Editor({
   webcontainer,
@@ -32,124 +47,67 @@ export default function Editor({
   setActiveFilePath,
 }: EditorProps) {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
-  const [pendingClosePath, setPendingClosePath] =  useState<string | null>(null);
+  const [pendingClosePath, setPendingClosePath] = useState<string | null>(null);
+  const currentFile = openedFiles.find((file) => file.path === activeFilePath) ?? null;
 
-  const currentFile =
-    openedFiles.find(
-      (file) => file.path === activeFilePath
-    ) ?? null;
+  const saveFile = useCallback(async (path: string) => {
+    if (!webcontainer) return;
 
-   
+    const file = openedFiles.find((openedFile) => openedFile.path === path);
+    if (!file) return;
+
+    await webcontainer.fs.writeFile(path, file.content);
+    setOpenedFiles((previousFiles) => previousFiles.map((openedFile) => (
+      openedFile.path === path ? { ...openedFile, isDirty: false } : openedFile
+    )));
+  }, [openedFiles, setOpenedFiles, webcontainer]);
+
   function closeTab(path: string) {
-  const file = openedFiles.find((f) => f.path === path);
+    const file = openedFiles.find((openedFile) => openedFile.path === path);
+    if (!file) return;
 
-  if (!file) return;
-
-  // Save dialog comes next.
-  if (file.isDirty) {
-    setPendingClosePath(path);
-    return;
-  }
-
-  const remainingFiles = openedFiles.filter(
-    (f) => f.path !== path
-  );
-
-  setOpenedFiles(remainingFiles);
-
-  if (activeFilePath !== path) return;
-
-  if (remainingFiles.length === 0) {
-    setActiveFilePath("");
-    return;
-  }
-
-  const closedIndex = openedFiles.findIndex(
-    (f) => f.path === path
-  );
-
-  const nextFile =
-    remainingFiles[closedIndex] ??
-    remainingFiles[closedIndex - 1];
-
-  setActiveFilePath(nextFile.path);
-}
-
-function forceCloseTab(path: string) {
-  const remainingFiles = openedFiles.filter(
-    (f) => f.path !== path
-  );
-
-  setOpenedFiles(remainingFiles);
-
-  if (activeFilePath !== path) return;
-
-  if (remainingFiles.length === 0) {
-    setActiveFilePath("");
-    return;
-  }
-
-  const closedIndex = openedFiles.findIndex(
-    (f) => f.path === path
-  );
-
-  const nextFile =
-    remainingFiles[closedIndex] ??
-    remainingFiles[closedIndex - 1];
-
-  setActiveFilePath(nextFile.path);
-}
-
-async function saveFile(path: string) {
-  if (!webcontainer) return;
-
-  const file = openedFiles.find((f) => f.path === path);
-
-  if (!file) return;
-
-  await webcontainer.fs.writeFile(path, file.content);
-
-  setOpenedFiles((prev) =>
-    prev.map((f) =>
-      f.path === path
-        ? {
-            ...f,
-            isDirty: false,
-          }
-        : f
-    )
-  );
-}
-
-useEffect(() => {
-  function handleKeyDown(e: KeyboardEvent) {
-    if (
-      (e.ctrlKey || e.metaKey) &&
-      e.key.toLowerCase() === "s"
-    ) {
-      e.preventDefault();
-
-      if (!activeFilePath) return;
-
-      saveFile(activeFilePath);
+    if (file.isDirty) {
+      setPendingClosePath(path);
+      return;
     }
+
+    forceCloseTab(path);
   }
 
-  window.addEventListener("keydown", handleKeyDown);
+  function forceCloseTab(path: string) {
+    const remainingFiles = openedFiles.filter((file) => file.path !== path);
+    setOpenedFiles(remainingFiles);
 
-  return () => {
-    window.removeEventListener(
-      "keydown",
-      handleKeyDown
-    );
-  };
-}, [activeFilePath, openedFiles, webcontainer]);
+    if (activeFilePath !== path) return;
+
+    if (remainingFiles.length === 0) {
+      setActiveFilePath("");
+      return;
+    }
+
+    const closedIndex = openedFiles.findIndex((file) => file.path === path);
+    const nextFile = remainingFiles[closedIndex] ?? remainingFiles[closedIndex - 1];
+    setActiveFilePath(nextFile.path);
+  }
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") return;
+
+      event.preventDefault();
+      if (activeFilePath) void saveFile(activeFilePath);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeFilePath, saveFile]);
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Tabs */}
-      <div className="h-9 flex bg-[#252526] border-b border-zinc-800 overflow-x-auto overflow-y-hidden">
-        {openedFiles.map((file) => {
+    <section className="flex h-full min-w-0 flex-col bg-[#0d1117]">
+      <div className="flex h-9 shrink-0 overflow-x-auto border-b border-[#30363d] bg-[#161b22]">
+        {openedFiles.length === 0 ? (
+          <span className="flex items-center px-3 text-[11px] text-[#6e7681]">No open editors</span>
+        ) : openedFiles.map((file) => {
           const isActive = file.path === activeFilePath;
 
           return (
@@ -158,107 +116,88 @@ useEffect(() => {
               onClick={() => setActiveFilePath(file.path)}
               onMouseEnter={() => setHoveredTab(file.path)}
               onMouseLeave={() => setHoveredTab(null)}
-              className={`
-                relative
-                flex
-                items-center
-                justify-between
-                min-w-[140px]
-                max-w-[220px]
-                h-full
-                px-3
-                border-r
-                border-zinc-800
-                cursor-pointer
-                select-none
-                transition-colors
-                ${
-                  isActive
-                    ? "bg-[#1e1e1e] text-white border-t-2 border-t-blue-500 border-b-[#1e1e1e]"
-                    : "bg-[#2d2d2d] text-zinc-400 hover:bg-[#252526] hover:text-white"
-                }
-              `}
+              className={`group relative flex h-full min-w-[140px] max-w-[220px] cursor-pointer items-center gap-2 border-r border-[#30363d] px-3 text-[12px] transition ${
+                isActive
+                  ? "bg-[#0d1117] text-[#e6edf3]"
+                  : "bg-[#161b22] text-[#8b949e] hover:bg-[#1c2128] hover:text-[#c9d1d9]"
+              }`}
             >
-              <span className="truncate text-[13px]">
-                {file.path.split("/").pop()}
-              </span>
-
-              <div className="w-4 flex items-center justify-center">
+              {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#007acc]" />}
+              <FileCode2 size={14} className="shrink-0 text-[#4fc1ff]" />
+              <span className="min-w-0 flex-1 truncate">{file.path.split("/").pop()}</span>
+              <span className="grid h-4 w-4 shrink-0 place-items-center">
                 {hoveredTab === file.path ? (
-                  <X
-  size={13}
-  onClick={(e) => {
-    e.stopPropagation();
-    closeTab(file.path);
-  }}
-  className="text-zinc-400 hover:text-white"
-/>
+                  <button
+                    type="button"
+                    aria-label={`Close ${file.path.split("/").pop()}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      closeTab(file.path);
+                    }}
+                    className="grid h-4 w-4 place-items-center rounded text-[#8b949e] hover:bg-[#30363d] hover:text-white"
+                  >
+                    <X size={12} />
+                  </button>
                 ) : file.isDirty ? (
-                  <span className="text-[10px] text-zinc-400">
-                    ●
-                  </span>
+                  <span className="text-[10px] text-[#c9d1d9]">●</span>
                 ) : null}
-              </div>
+              </span>
             </div>
           );
         })}
       </div>
 
-      {/* Monaco */}
-      <div className="flex-1 bg-[#1e1e1e]">
+      <div className="min-h-0 flex-1 bg-[#0d1117]">
         {currentFile ? (
           <MonacoEditor
             height="100%"
-            defaultLanguage="typescript"
+            language={languageForPath(currentFile.path)}
             theme="vs-dark"
             value={currentFile.content}
             onChange={(value) => {
-              setOpenedFiles((prev) =>
-                prev.map((file) =>
-                  file.path === activeFilePath
-                    ? {
-                        ...file,
-                        content: value ?? "",
-                        isDirty: true,
-                      }
-                    : file
-                )
-              );
+              setOpenedFiles((previousFiles) => previousFiles.map((file) => (
+                file.path === activeFilePath
+                  ? { ...file, content: value ?? "", isDirty: true }
+                  : file
+              )));
             }}
             options={{
-              minimap: {
-                enabled: false,
-              },
-              fontSize: 14,
               automaticLayout: true,
+              fontFamily: "var(--font-geist-mono), Menlo, Monaco, Consolas, monospace",
+              fontSize: 13,
+              lineHeight: 22,
+              minimap: { enabled: false },
+              padding: { top: 14 },
+              smoothScrolling: true,
             }}
           />
         ) : (
-          <div className="h-full flex items-center justify-center text-zinc-500">
-            No file selected
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-xl border border-[#30363d] bg-[#161b22] text-[#4fc1ff] shadow-lg shadow-black/20">
+              <FileCode2 size={22} />
+            </span>
+            <p className="mt-4 text-sm font-medium text-[#c9d1d9]">Ready for your next file</p>
+            <p className="mt-1 max-w-xs text-xs leading-5 text-[#6e7681]">Select a file in Explorer or create a new one to start coding.</p>
+            <kbd className="mt-5 rounded border border-[#30363d] bg-[#161b22] px-2 py-1 font-mono text-[10px] text-[#8b949e]">⌘ P</kbd>
           </div>
         )}
       </div>
+
       {pendingClosePath && (
-  <SaveDialog
-    fileName={pendingClosePath.split("/").pop()!}
-    onCancel={() => setPendingClosePath(null)}
-    onDiscard={() => {
-      forceCloseTab(pendingClosePath);
-      setPendingClosePath(null);
-    }}
-    onSave={async () => {
-      if (!pendingClosePath) return;
-
-      await saveFile(pendingClosePath);
-
-      forceCloseTab(pendingClosePath);
-
-      setPendingClosePath(null);
-    }}
-  />
-)}
-    </div>
-    
+        <SaveDialog
+          fileName={pendingClosePath.split("/").pop()!}
+          onCancel={() => setPendingClosePath(null)}
+          onDiscard={() => {
+            forceCloseTab(pendingClosePath);
+            setPendingClosePath(null);
+          }}
+          onSave={async () => {
+            await saveFile(pendingClosePath);
+            forceCloseTab(pendingClosePath);
+            setPendingClosePath(null);
+          }}
+        />
+      )}
+    </section>
   );
 }
