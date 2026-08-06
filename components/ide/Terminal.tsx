@@ -36,7 +36,8 @@ export default function IDETerminal({ onFilesystemChange }: IDETerminalProps) {
       let currentCommand = "";
       term = new Terminal({
         cursorBlink: true,
-        fontFamily: "var(--font-geist-mono), Menlo, Monaco, Consolas, monospace",
+        fontFamily:
+          "var(--font-geist-mono), Menlo, Monaco, Consolas, monospace",
         fontSize: 13,
         lineHeight: 1.35,
         theme: {
@@ -64,15 +65,23 @@ export default function IDETerminal({ onFilesystemChange }: IDETerminalProps) {
       resizeObserver = new ResizeObserver(() => fitAddon.fit());
       resizeObserver.observe(terminalRef.current);
 
-      term.writeln("\x1b[1;34mCodeForge terminal\x1b[0m  —  your browser workspace is ready.");
+      term.writeln(
+        "\x1b[1;34mCodeForge terminal\x1b[0m  —  your browser workspace is ready.",
+      );
       term.writeln("\x1b[90mRun a command to get started.\x1b[0m");
       term.write("\x1b[32m❯\x1b[0m ");
 
       term.onData(async (data) => {
         if (!term) return;
 
-        if (activeProcess) {
-          await processInputWriter?.write(data);
+        if (activeProcess && processInputWriter) {
+          try {
+            await processInputWriter.write(data);
+          } catch {
+            // Process has already exited.
+            processInputWriter = null;
+            activeProcess = null;
+          }
           return;
         }
 
@@ -90,24 +99,43 @@ export default function IDETerminal({ onFilesystemChange }: IDETerminalProps) {
             activeProcess = await webcontainer.spawn(command, args);
             processInputWriter = activeProcess.input.getWriter();
 
-            void activeProcess.output.pipeTo(new WritableStream({
-              write(output) {
-                term?.write(output);
-              },
-            }));
+            void activeProcess.output
+              .pipeTo(
+                new WritableStream({
+                  write(output) {
+                    term?.write(output);
+                  },
+                }),
+              )
+              .catch(() => {
+                // Ignore cancellation when the process exits.
+              });
 
             const exitCode = await activeProcess.exit;
             await filesystemChangeRef.current();
 
-            processInputWriter?.releaseLock();
+            const writer = processInputWriter;
+            // Make them unusable first
             processInputWriter = null;
             activeProcess = null;
+            // Then release the writer
+            writer?.releaseLock();
+
             term.writeln("");
             term.writeln(`\x1b[90mProcess exited with code ${exitCode}\x1b[0m`);
           } catch (error) {
-            term.writeln(`\x1b[31mError: ${error instanceof Error ? error.message : String(error)}\x1b[0m`);
-            activeProcess = null;
+            const writer = processInputWriter;
+
             processInputWriter = null;
+            activeProcess = null;
+
+            writer?.releaseLock();
+
+            term.writeln(
+              `\x1b[31mError: ${
+                error instanceof Error ? error.message : String(error)
+              }\x1b[0m`,
+            );
           }
 
           currentCommand = "";
@@ -135,7 +163,10 @@ export default function IDETerminal({ onFilesystemChange }: IDETerminalProps) {
     return () => {
       cancelled = true;
       resizeObserver?.disconnect();
-      processInputWriter?.releaseLock();
+      const writer = processInputWriter;
+      processInputWriter = null;
+      activeProcess = null;
+      writer?.releaseLock();
       term?.dispose();
     };
   }, []);

@@ -42,7 +42,14 @@ export default function PlaygroundPage() {
   const [openedFiles, setOpenedFiles] = useState<OpenFile[]>([]);
   const [activeFilePath, setActiveFilePath] = useState("");
   const [activeActivity, setActiveActivity] = useState("explorer");
-  const [bottomPanel, setBottomPanel] = useState<"terminal" | "preview">("terminal");
+  const [bottomPanel, setBottomPanel] = useState<"terminal" | "preview">(
+    "terminal",
+  );
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [selectedPath, setSelectedPath] = useState("");
+  const [selectedType, setSelectedType] = useState<"file" | "directory" | "">(
+    "",
+  );
 
   async function refreshFileTree(wc: WebContainer) {
     const tree = await readDirectory(wc, ".");
@@ -52,7 +59,7 @@ export default function PlaygroundPage() {
   async function createFolder(path: string) {
     if (!webcontainer) return;
 
-    await webcontainer.fs.mkdir(path);
+    await webcontainer.fs.mkdir(path, { recursive: true });
     await refreshFileTree(webcontainer);
   }
 
@@ -60,6 +67,44 @@ export default function PlaygroundPage() {
     if (!webcontainer) return;
 
     await webcontainer.fs.writeFile(path, "");
+    await refreshFileTree(webcontainer);
+  }
+
+  function closePathsUnder(path: string) {
+    setOpenedFiles((previousFiles) =>
+      previousFiles.filter(
+        (file) => file.path !== path && !file.path.startsWith(`${path}/`),
+      ),
+    );
+    setActiveFilePath((current) =>
+      current === path || current.startsWith(`${path}/`) ? "" : current,
+    );
+  }
+
+  async function deletePath(path: string) {
+    if (!webcontainer) return;
+
+    await webcontainer.fs.rm(path, { recursive: true, force: true });
+    closePathsUnder(path);
+    await refreshFileTree(webcontainer);
+  }
+
+  async function renamePath(oldPath: string, newPath: string) {
+    if (!webcontainer) return;
+
+    await webcontainer.fs.rename(oldPath, newPath);
+
+    const remap = (path: string) =>
+      path === oldPath
+        ? newPath
+        : path.startsWith(`${oldPath}/`)
+          ? newPath + path.slice(oldPath.length)
+          : path;
+
+    setOpenedFiles((previousFiles) =>
+      previousFiles.map((file) => ({ ...file, path: remap(file.path) })),
+    );
+    setActiveFilePath((current) => remap(current));
     await refreshFileTree(webcontainer);
   }
 
@@ -85,6 +130,10 @@ export default function PlaygroundPage() {
   useEffect(() => {
     async function init() {
       const wc = await getWebContainer();
+      wc.on("server-ready", (port, url) => {
+        console.log(port, url);
+        setPreviewUrl(url);
+      });
       setWebcontainer(wc);
       await refreshFileTree(wc);
     }
@@ -100,8 +149,12 @@ export default function PlaygroundPage() {
             <Code2 size={25} />
           </span>
           <div className="text-center">
-            <p className="text-sm font-medium text-white">Preparing your workspace</p>
-            <p className="mt-1 text-xs text-[#8b949e]">Booting the browser development environment…</p>
+            <p className="text-sm font-medium text-white">
+              Preparing your workspace
+            </p>
+            <p className="mt-1 text-xs text-[#8b949e]">
+              Booting the browser development environment…
+            </p>
           </div>
           <span className="h-1 w-32 overflow-hidden rounded-full bg-[#21262d]">
             <span className="block h-full w-2/3 animate-pulse rounded-full bg-[#007acc]" />
@@ -110,7 +163,7 @@ export default function PlaygroundPage() {
       </main>
     );
   }
-
+  console.log("Playground previewUrl:", previewUrl);
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-[#0d1117] font-sans text-[#e6edf3]">
       <header className="h-12 shrink-0 border-b border-[#30363d]">
@@ -140,7 +193,9 @@ export default function PlaygroundPage() {
                       : "text-[#7d8590] hover:bg-[#21262d] hover:text-[#c9d1d9]"
                   }`}
                 >
-                  {isActive && <span className="absolute left-0 h-6 w-0.5 rounded-r-full bg-[#007acc]" />}
+                  {isActive && (
+                    <span className="absolute left-0 h-6 w-0.5 rounded-r-full bg-[#007acc]" />
+                  )}
                   <Icon size={20} strokeWidth={1.8} />
                 </button>
               );
@@ -168,6 +223,12 @@ export default function PlaygroundPage() {
                   onCreateFolder={createFolder}
                   onCreateFile={createFile}
                   onOpenFile={openFile}
+                  onDeletePath={deletePath}
+                  onRenamePath={renamePath}
+                  selectedPath={selectedPath}
+                  setSelectedPath={setSelectedPath}
+                  selectedType={selectedType}
+                  setSelectedType={setSelectedType}
                 />
               </Panel>
 
@@ -199,7 +260,9 @@ export default function PlaygroundPage() {
                   }`}
                 >
                   TERMINAL
-                  {bottomPanel === "terminal" && <span className="absolute inset-x-2 bottom-0 h-0.5 bg-[#007acc]" />}
+                  {bottomPanel === "terminal" && (
+                    <span className="absolute inset-x-2 bottom-0 h-0.5 bg-[#007acc]" />
+                  )}
                 </button>
                 <button
                   onClick={() => setBottomPanel("preview")}
@@ -210,16 +273,22 @@ export default function PlaygroundPage() {
                   }`}
                 >
                   PREVIEW
-                  {bottomPanel === "preview" && <span className="absolute inset-x-2 bottom-0 h-0.5 bg-[#007acc]" />}
+                  {bottomPanel === "preview" && (
+                    <span className="absolute inset-x-2 bottom-0 h-0.5 bg-[#007acc]" />
+                  )}
                 </button>
-                <span className="ml-auto pr-3 text-[10px] text-[#6e7681]">webcontainer</span>
+                <span className="ml-auto pr-3 text-[10px] text-[#6e7681]">
+                  webcontainer
+                </span>
               </div>
 
               <div className="min-h-0 flex-1 overflow-hidden">
                 {bottomPanel === "terminal" ? (
-                  <IDETerminal onFilesystemChange={() => refreshFileTree(webcontainer)} />
+                  <IDETerminal
+                    onFilesystemChange={() => refreshFileTree(webcontainer)}
+                  />
                 ) : (
-                  <Preview />
+                  <Preview previewUrl={previewUrl} />
                 )}
               </div>
             </section>
@@ -228,7 +297,9 @@ export default function PlaygroundPage() {
       </div>
 
       <footer className="flex h-6 shrink-0 items-center justify-between bg-[#007acc] px-3 text-[10px] font-medium text-white">
-        <span className="flex items-center gap-1.5"><GitBranch size={12} /> main</span>
+        <span className="flex items-center gap-1.5">
+          <GitBranch size={12} /> main
+        </span>
         <span className="hidden sm:inline">No problems detected</span>
         <span>Spaces: 2 &nbsp; UTF-8</span>
       </footer>
