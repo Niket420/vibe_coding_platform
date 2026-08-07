@@ -7,8 +7,12 @@ import { getWebContainer } from "@/lib/webcontainer";
 import { WebContainerProcess } from "@webcontainer/api";
 import "@xterm/xterm/css/xterm.css";
 
-let activeProcess: WebContainerProcess | null = null;
-let processInputWriter: WritableStreamDefaultWriter<string> | null = null;
+// Kept at module scope so the jsh session (and anything running inside it,
+// e.g. a dev server) survives this component unmounting when the user
+// switches to the Preview tab.
+let shellProcess: WebContainerProcess | null = null;
+let shellInput: WritableStreamDefaultWriter<string> | null = null;
+let attachedTerminal: Terminal | null = null;
 
 type IDETerminalProps = {
   onFilesystemChange: () => Promise<void>;
@@ -25,136 +29,78 @@ export default function IDETerminal({ onFilesystemChange }: IDETerminalProps) {
   useEffect(() => {
     if (!terminalRef.current) return;
 
-    let term: Terminal | null = null;
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
+    let refreshTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    const term = new Terminal({
+      cursorBlink: true,
+      fontFamily: "var(--font-geist-mono), Menlo, Monaco, Consolas, monospace",
+      fontSize: 13,
+      lineHeight: 1.35,
+      theme: {
+        background: "#0d1117",
+        black: "#0d1117",
+        brightBlack: "#6e7681",
+        cursor: "#e6edf3",
+        foreground: "#c9d1d9",
+        green: "#3fb950",
+        red: "#ff7b72",
+        selectionBackground: "#1f6feb66",
+      },
+    });
+
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(terminalRef.current);
 
     async function init() {
       const webcontainer = await getWebContainer();
-      if (cancelled || !terminalRef.current) return;
-
-      let currentCommand = "";
-      term = new Terminal({
-        cursorBlink: true,
-        fontFamily:
-          "var(--font-geist-mono), Menlo, Monaco, Consolas, monospace",
-        fontSize: 13,
-        lineHeight: 1.35,
-        theme: {
-          background: "#0d1117",
-          black: "#0d1117",
-          brightBlack: "#6e7681",
-          cursor: "#e6edf3",
-          foreground: "#c9d1d9",
-          green: "#3fb950",
-          red: "#ff7b72",
-          selectionBackground: "#1f6feb66",
-        },
-      });
-
-      const fitAddon = new FitAddon();
-      term.loadAddon(fitAddon);
-      term.open(terminalRef.current);
+      if (cancelled) return;
 
       requestAnimationFrame(() => {
         if (cancelled) return;
         fitAddon.fit();
-        term?.focus();
+        term.focus();
+        shellProcess?.resize({ cols: term.cols, rows: term.rows });
       });
 
-      resizeObserver = new ResizeObserver(() => fitAddon.fit());
-      resizeObserver.observe(terminalRef.current);
+      resizeObserver = new ResizeObserver(() => {
+        fitAddon.fit();
+        shellProcess?.resize({ cols: term.cols, rows: term.rows });
+      });
+      resizeObserver.observe(terminalRef.current!);
 
-      term.writeln(
-        "\x1b[1;34mCodeForge terminal\x1b[0m  —  your browser workspace is ready.",
-      );
-      term.writeln("\x1b[90mRun a command to get started.\x1b[0m");
-      term.write("\x1b[32m❯\x1b[0m ");
+      attachedTerminal = term;
 
-      term.onData(async (data) => {
-        if (!term) return;
+      if (!shellProcess) {
+        shellProcess = await webcontainer.spawn("jsh", {
+          terminal: { cols: term.cols, rows: term.rows },
+        });
+        shellInput = shellProcess.input.getWriter();
 
-        if (activeProcess && processInputWriter) {
-          try {
-            await processInputWriter.write(data);
-          } catch {
-            // Process has already exited.
-            processInputWriter = null;
-            activeProcess = null;
-          }
-          return;
-        }
+        void shellProcess.output.pipeTo(
+          new WritableStream({
+            write(chunk) {
+              attachedTerminal?.write(chunk);
+            },
+          }),
+        );
 
-        if (data === "\r") {
-          term.writeln("");
+        void shellProcess.exit.then(() => {
+          attachedTerminal?.writeln("\r\n\x1b[90mShell exited.\x1b[0m");
+          shellProcess = null;
+          shellInput = null;
+        });
+      }
 
-          const [command, ...args] = currentCommand.trim().split(" ");
-          if (!command) {
-            term.write("\x1b[32m❯\x1b[0m ");
-            currentCommand = "";
-            return;
-          }
+      term.onData((data) => {
+        void shellInput?.write(data);
+      });
 
-          try {
-            activeProcess = await webcontainer.spawn(command, args);
-            processInputWriter = activeProcess.input.getWriter();
-
-            void activeProcess.output
-              .pipeTo(
-                new WritableStream({
-                  write(output) {
-                    term?.write(output);
-                  },
-                }),
-              )
-              .catch(() => {
-                // Ignore cancellation when the process exits.
-              });
-
-            const exitCode = await activeProcess.exit;
-            await filesystemChangeRef.current();
-
-            const writer = processInputWriter;
-            // Make them unusable first
-            processInputWriter = null;
-            activeProcess = null;
-            // Then release the writer
-            writer?.releaseLock();
-
-            term.writeln("");
-            term.writeln(`\x1b[90mProcess exited with code ${exitCode}\x1b[0m`);
-          } catch (error) {
-            const writer = processInputWriter;
-
-            processInputWriter = null;
-            activeProcess = null;
-
-            writer?.releaseLock();
-
-            term.writeln(
-              `\x1b[31mError: ${
-                error instanceof Error ? error.message : String(error)
-              }\x1b[0m`,
-            );
-          }
-
-          currentCommand = "";
-          term.write("\x1b[32m❯\x1b[0m ");
-          return;
-        }
-
-        if (data === "\x7f") {
-          if (currentCommand.length > 0) {
-            currentCommand = currentCommand.slice(0, -1);
-            term.write("\b \b");
-          }
-          return;
-        }
-
-        if (data.startsWith("\x1b")) return;
-
-        currentCommand += data;
-        term.write(data);
+      webcontainer.fs.watch(".", { recursive: true }, () => {
+        clearTimeout(refreshTimeout);
+        refreshTimeout = setTimeout(() => void filesystemChangeRef.current(), 400);
       });
     }
 
@@ -162,12 +108,10 @@ export default function IDETerminal({ onFilesystemChange }: IDETerminalProps) {
 
     return () => {
       cancelled = true;
+      clearTimeout(refreshTimeout);
       resizeObserver?.disconnect();
-      const writer = processInputWriter;
-      processInputWriter = null;
-      activeProcess = null;
-      writer?.releaseLock();
-      term?.dispose();
+      if (attachedTerminal === term) attachedTerminal = null;
+      term.dispose();
     };
   }, []);
 
