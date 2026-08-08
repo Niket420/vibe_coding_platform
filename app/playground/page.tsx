@@ -283,14 +283,17 @@ export default function PlaygroundPage() {
               </div>
 
               <div className="min-h-0 flex-1 overflow-hidden">
-                {bottomPanel === "terminal" ? (
-                  <IDETerminal
-                    onFilesystemChange={() => refreshFileTree(webcontainer)}
-                  />
-                ) : (
-                  <Preview previewUrl={previewUrl} />
-                )}
-              </div>
+  <div className={bottomPanel === "terminal" ? "h-full" : "hidden"}>
+    <IDETerminal
+      onFilesystemChange={() => refreshFileTree(webcontainer)}
+    />
+  </div>
+
+  <div className={bottomPanel === "preview" ? "h-full" : "hidden"}>
+    <Preview previewUrl={previewUrl} />
+  </div>
+</div>
+
             </section>
           </Panel>
         </Group>
