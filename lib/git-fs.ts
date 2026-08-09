@@ -26,14 +26,19 @@ export const gitFs = {
     },
 
     async writeFile(
-      path: string,
-      data: string | Uint8Array,
-      options?: any
-    ) {
-      const wc = await getWebContainer();
+        path: string,
+        data: string | Uint8Array,
+        options?: any
+      ) {
+        const wc = await getWebContainer();
 
-      await wc.fs.writeFile(path, data, options);
-    },
+        const encoding =
+          typeof options === "string"
+            ? options
+            : options?.encoding;
+
+        await wc.fs.writeFile(path, data, encoding);
+      },
 
     async readdir(path: string, options?: any) {
       const wc = await getWebContainer();

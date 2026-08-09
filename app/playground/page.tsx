@@ -21,7 +21,7 @@ import FileExplorer from "@/components/ide/FileExplorer";
 import Editor from "@/components/ide/Editor";
 import Preview from "@/components/ide/Preview";
 import IDETerminal from "@/components/ide/Terminal";
-import { initGit,getGitStatus } from "@/lib/git";
+import { initGit,getGitStatus,unstageFile,stageFile,commitChanges } from "@/lib/git";
 
 type OpenFile = {
   path: string;
@@ -173,6 +173,29 @@ export default function PlaygroundPage() {
       <header className="h-12 shrink-0 border-b border-[#30363d]">
         <IDEHeader onRun={() => setBottomPanel("terminal")} />
       </header>
+
+        <button
+          type="button"
+          onClick={async () => {
+            await stageFile("test.js");
+
+            const commitHash = await commitChanges("Add test.js", {
+              name: "Niket",
+              email: "niket@example.com",
+            });
+
+            console.log("Commit created:", commitHash);
+
+            const status = await getGitStatus();
+
+            console.log("After commit:", status);
+          }}
+        >
+          Test Commit
+        </button>
+              
+
+
       <div className="flex min-h-0 flex-1">
         <aside className="z-10 flex w-12 shrink-0 flex-col items-center border-r border-[#30363d] bg-[#11161d] py-3">
           <div className="mb-4 grid h-8 w-8 place-items-center rounded-md bg-[#007acc] text-white shadow-lg shadow-[#007acc]/25">
