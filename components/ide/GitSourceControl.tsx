@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import {
+  initGit,
   getGitStatus,
   stageFile,
   unstageFile,
@@ -41,28 +42,46 @@ export default function GitSourceControl({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  async function refreshGit() {
+async function refreshGit() {
+  try {
+    const result = await getGitStatus();
+    setStatus(result as GitStatusRow[]);
+
     try {
-      const result = await getGitStatus();
-      setStatus(result as GitStatusRow[]);
-
       const branch = await getCurrentBranch();
+      setCurrentBranch(branch || "");
+    } catch {
+      setCurrentBranch("");
+    }
 
-      if (branch) {
-        setCurrentBranch(branch);
-      }
-
+    try {
       const branchList = await getBranches();
       setBranches(branchList);
-    } catch (error) {
-      console.error("Git refresh error:", error);
-      setMessage("Unable to read Git status.");
+    } catch {
+      setBranches([]);
     }
+  } catch (error) {
+    console.error("Git refresh error:", error);
+    setMessage("Unable to read Git status.");
   }
+}
 
   useEffect(() => {
     refreshGit();
   }, []);
+
+  async function handleInitGit() {
+  try {
+    await initGit();
+
+    setMessage("Git repository initialized.");
+
+    await refreshGit();
+  } catch (error) {
+    console.error("Git init error:", error);
+    setMessage("Git initialization failed.");
+  }
+}
 
   async function handleStage(path: string) {
     try {
@@ -190,7 +209,7 @@ export default function GitSourceControl({
         <span className="text-[11px] font-semibold tracking-[0.12em]">
           SOURCE CONTROL
         </span>
-
+        
         <button
           type="button"
           title="Refresh Git"
@@ -200,6 +219,14 @@ export default function GitSourceControl({
           <RefreshCw size={14} />
         </button>
       </div>
+
+      <button
+  type="button"
+  onClick={handleInitGit}
+  className="mx-3 mt-3 flex h-8 items-center justify-center rounded border border-[#30363d] text-xs hover:bg-[#21262d]"
+>
+  Initialize Git Repository
+</button>
 
       {/* Branch */}
       <div className="border-b border-[#30363d] px-3 py-2">

@@ -53,7 +53,7 @@ export const gitFs = {
     async mkdir(path: string, mode?: any) {
       const wc = await getWebContainer();
 
-      await wc.fs.mkdir(path);
+      await wc.fs.mkdir(path, { recursive: true });
     },
 
     async unlink(path: string) {
@@ -111,7 +111,7 @@ export const gitFs = {
     },
 
     async lstat(path: string) {
-      return this.stat(path);
+      return gitFs.promises.stat(path);
     },
 
     // Required by isomorphic-git.
