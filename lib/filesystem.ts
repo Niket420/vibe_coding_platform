@@ -1,6 +1,8 @@
 import { WebContainer } from "@webcontainer/api";
 import { FileTreeNode } from "@/types/file-tree";
 
+const IGNORED_DIRS = new Set(["node_modules", ".git"]);
+
 export async function readDirectory(
   webcontainer: WebContainer,
   path: string
@@ -12,6 +14,8 @@ export async function readDirectory(
   const tree: FileTreeNode[] = [];
 
   for (const entry of entries) {
+    if (entry.isDirectory() && IGNORED_DIRS.has(entry.name)) continue;
+
     const fullPath =
       path === "."
         ? entry.name

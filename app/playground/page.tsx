@@ -22,6 +22,7 @@ import Editor from "@/components/ide/Editor";
 import Preview from "@/components/ide/Preview";
 import IDETerminal from "@/components/ide/Terminal";
 import { initGit,getGitStatus,unstageFile,stageFile,commitChanges } from "@/lib/git";
+import GitSourceControl from "@/components/ide/GitSourceControl";
 
 type OpenFile = {
   path: string;
@@ -174,25 +175,7 @@ export default function PlaygroundPage() {
         <IDEHeader onRun={() => setBottomPanel("terminal")} />
       </header>
 
-        <button
-          type="button"
-          onClick={async () => {
-            await stageFile("test.js");
-
-            const commitHash = await commitChanges("Add test.js", {
-              name: "Niket",
-              email: "niket@example.com",
-            });
-
-            console.log("Commit created:", commitHash);
-
-            const status = await getGitStatus();
-
-            console.log("After commit:", status);
-          }}
-        >
-          Test Commit
-        </button>
+    
               
 
 
@@ -242,20 +225,28 @@ export default function PlaygroundPage() {
           <Panel defaultSize={74} minSize={35}>
             <Group>
               <Panel defaultSize={20} minSize={14}>
-                <FileExplorer
-                  fileTree={fileTree}
-                  activeFilePath={activeFilePath}
-                  onRefresh={() => refreshFileTree(webcontainer)}
-                  onCreateFolder={createFolder}
-                  onCreateFile={createFile}
-                  onOpenFile={openFile}
-                  onDeletePath={deletePath}
-                  onRenamePath={renamePath}
-                  selectedPath={selectedPath}
-                  setSelectedPath={setSelectedPath}
-                  selectedType={selectedType}
-                  setSelectedType={setSelectedType}
-                />
+                {activeActivity === "source-control" ? (
+                  <GitSourceControl
+                    onRefreshExplorer={async () => {
+                      await refreshFileTree(webcontainer);
+                    }}
+                  />
+                ) : (
+                  <FileExplorer
+                    fileTree={fileTree}
+                    activeFilePath={activeFilePath}
+                    onRefresh={() => refreshFileTree(webcontainer)}
+                    onCreateFolder={createFolder}
+                    onCreateFile={createFile}
+                    onOpenFile={openFile}
+                    onDeletePath={deletePath}
+                    onRenamePath={renamePath}
+                    selectedPath={selectedPath}
+                    setSelectedPath={setSelectedPath}
+                    selectedType={selectedType}
+                    setSelectedType={setSelectedType}
+                  />
+                )}
               </Panel>
 
               <Separator className="w-px bg-[#30363d] transition-colors hover:bg-[#007acc]" />

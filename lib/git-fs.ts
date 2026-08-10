@@ -89,6 +89,7 @@ export const gitFs = {
           mode: 0o40755,
           isFile: () => false,
           isDirectory: () => true,
+           isSymbolicLink: () => false,
         };
       } catch {
         try {
@@ -101,6 +102,7 @@ export const gitFs = {
             mode: 0o100644,
             isFile: () => true,
             isDirectory: () => false,
+            isSymbolicLink: () => false,
           };
         } catch (error) {
           throw withCode(error, "ENOENT");
