@@ -8,28 +8,42 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   GitBranch,
   GitCommit,
   History,
   Loader2,
   Minus,
+  MoreHorizontal,
   Plus,
   RefreshCw,
+  Tag,
+  Trash2,
   Upload,
 } from "lucide-react";
 
 import { getWebContainer } from "@/lib/webcontainer";
 import {
   initGit,
+  cloneRepository,
   getGitStatus,
   stageFile,
+  stageAll,
   unstageFile,
+  unstageAll,
   commitChanges,
   getGitLog,
   getBranches,
   getCurrentBranch,
   checkoutBranch,
   createBranch,
+  deleteBranch,
+  getRemotes,
+  addRemote,
+  deleteRemote,
+  getTags,
+  createTag,
   fetchRemote,
   pullRemote,
   pushRemote,
@@ -38,6 +52,7 @@ import {
 
 type GitStatusRow = [string, number, number, number];
 type Tone = "info" | "success" | "error";
+type MoreView = "root" | "delete-branch" | "remotes" | "tags";
 
 type GitSourceControlProps = {
   onRefreshExplorer?: () => Promise<void>;
@@ -56,6 +71,14 @@ function stagedBadge(head: number, stage: number) {
   if (head === 1 && stage === 0) return { letter: "D", className: "text-[#f85149]" };
   if (head === 1) return { letter: "M", className: "text-[#e3b341]" };
   return null;
+}
+
+// commit.changes tuples are [newOid, oldOid, filepath]; an added/removed file
+// has a null old/new oid respectively.
+function changeBadge(newOid: string | null, oldOid: string | null) {
+  if (newOid === null) return { letter: "D", className: "text-[#f85149]" };
+  if (oldOid === null) return { letter: "A", className: "text-[#3fb950]" };
+  return { letter: "M", className: "text-[#e3b341]" };
 }
 
 function splitPath(path: string) {
@@ -80,6 +103,7 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
   const [initialized, setInitialized] = useState<boolean | null>(null);
   const [status, setStatus] = useState<GitStatusRow[]>([]);
   const [history, setHistory] = useState<GitLogEntry[]>([]);
+  const [expandedCommit, setExpandedCommit] = useState<string | null>(null);
   const [commitMessage, setCommitMessage] = useState("");
   const [currentBranch, setCurrentBranch] = useState("");
   const [branches, setBranches] = useState<string[]>([]);
@@ -90,6 +114,14 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
   const [initializing, setInitializing] = useState(false);
   const [message, setMessage] = useState("");
   const [tone, setTone] = useState<Tone>("info");
+
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [moreView, setMoreView] = useState<MoreView>("root");
+  const [remotes, setRemotes] = useState<{ remote: string; url: string }[]>([]);
+  const [newRemoteName, setNewRemoteName] = useState("");
+  const [newRemoteUrl, setNewRemoteUrl] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState("");
 
   function notify(text: string, nextTone: Tone = "info") {
     setMessage(text);
@@ -163,6 +195,24 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
     }
   }
 
+  async function handleClone() {
+    const url = prompt("Repository URL to clone");
+    if (!url?.trim()) return;
+
+    try {
+      setInitializing(true);
+      await cloneRepository(url.trim());
+      await refreshGit();
+      await onRefreshExplorer?.();
+      notify("Repository cloned.", "success");
+    } catch (error) {
+      console.error("Clone error:", error);
+      notify("Clone failed — GitHub needs a CORS proxy for browser access.", "error");
+    } finally {
+      setInitializing(false);
+    }
+  }
+
   async function handleStage(path: string) {
     try {
       await stageFile(path);
@@ -180,6 +230,34 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
     } catch (error) {
       console.error("Unstage error:", error);
       notify(`Could not unstage ${path}`, "error");
+    }
+  }
+
+  async function handleStageAll() {
+    try {
+      setLoading(true);
+      await stageAll();
+      await refreshGit();
+      notify("Staged all changes.", "success");
+    } catch (error) {
+      console.error("Stage all error:", error);
+      notify("Could not stage all changes.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleUnstageAll() {
+    try {
+      setLoading(true);
+      await unstageAll();
+      await refreshGit();
+      notify("Unstaged all changes.", "success");
+    } catch (error) {
+      console.error("Unstage all error:", error);
+      notify("Could not unstage all changes.", "error");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -289,6 +367,91 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
     }
   }
 
+  async function handleDeleteBranch(branch: string) {
+    if (!confirm(`Delete branch "${branch}"? This cannot be undone.`)) return;
+
+    try {
+      await deleteBranch(branch);
+      await refreshGit();
+      notify(`Deleted ${branch}.`, "success");
+    } catch (error) {
+      console.error("Delete branch error:", error);
+      notify(`Could not delete ${branch}.`, "error");
+    }
+  }
+
+  async function loadRemotes() {
+    try {
+      setRemotes(await getRemotes());
+    } catch {
+      setRemotes([]);
+    }
+  }
+
+  async function handleAddRemote() {
+    const name = newRemoteName.trim();
+    const url = newRemoteUrl.trim();
+    if (!name || !url) return;
+
+    try {
+      await addRemote(name, url);
+      setNewRemoteName("");
+      setNewRemoteUrl("");
+      await loadRemotes();
+      notify(`Added remote "${name}".`, "success");
+    } catch (error) {
+      console.error("Add remote error:", error);
+      notify(`Could not add remote "${name}".`, "error");
+    }
+  }
+
+  async function handleDeleteRemote(name: string) {
+    if (!confirm(`Remove remote "${name}"?`)) return;
+
+    try {
+      await deleteRemote(name);
+      await loadRemotes();
+      notify(`Removed remote "${name}".`, "success");
+    } catch (error) {
+      console.error("Delete remote error:", error);
+      notify(`Could not remove remote "${name}".`, "error");
+    }
+  }
+
+  async function loadTags() {
+    try {
+      setTags(await getTags());
+    } catch {
+      setTags([]);
+    }
+  }
+
+  async function handleCreateTag() {
+    const name = newTagName.trim();
+    if (!name) return;
+
+    try {
+      await createTag(name);
+      setNewTagName("");
+      await loadTags();
+      notify(`Created tag "${name}".`, "success");
+    } catch (error) {
+      console.error("Create tag error:", error);
+      notify(`Could not create tag "${name}".`, "error");
+    }
+  }
+
+  function openMoreView(view: MoreView) {
+    setMoreView(view);
+    if (view === "remotes") void loadRemotes();
+    if (view === "tags") void loadTags();
+  }
+
+  function closeMoreMenu() {
+    setMoreMenuOpen(false);
+    setMoreView("root");
+  }
+
   // statusMatrix rows are [filepath, HEAD, WORKDIR, STAGE].
   // A file is changed when WORKDIR differs from HEAD but hasn't been staged yet;
   // it's staged once STAGE no longer matches HEAD.
@@ -323,15 +486,25 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
               Initialize a repository to track changes and commit your work.
             </p>
           </div>
-          <button
-            type="button"
-            disabled={initializing}
-            onClick={handleInitGit}
-            className="flex h-8 items-center gap-2 rounded-md bg-[#007acc] px-3.5 text-xs font-semibold text-white transition hover:bg-[#1685d1] disabled:opacity-50"
-          >
-            {initializing && <Loader2 size={13} className="animate-spin" />}
-            Initialize Repository
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={initializing}
+              onClick={handleInitGit}
+              className="flex h-8 items-center gap-2 rounded-md bg-[#007acc] px-3.5 text-xs font-semibold text-white transition hover:bg-[#1685d1] disabled:opacity-50"
+            >
+              {initializing && <Loader2 size={13} className="animate-spin" />}
+              Initialize Repository
+            </button>
+            <button
+              type="button"
+              disabled={initializing}
+              onClick={handleClone}
+              className="flex h-8 items-center gap-2 rounded-md border border-[#30363d] px-3.5 text-xs font-semibold text-[#c9d1d9] transition hover:bg-[#21262d] disabled:opacity-50"
+            >
+              Clone Repository
+            </button>
+          </div>
           {message && <p className="text-[11px] text-[#f85149]">{message}</p>}
         </div>
       ) : initialized === null ? (
@@ -377,6 +550,14 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
                 className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#30363d] hover:text-white disabled:opacity-40"
               >
                 <Upload size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMoreMenuOpen((open) => !open)}
+                title="More actions"
+                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#30363d] hover:text-white"
+              >
+                <MoreHorizontal size={14} />
               </button>
             </div>
 
@@ -432,6 +613,215 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
                       {creatingBranch ? <Loader2 size={13} className="animate-spin" /> : <Plus size={14} />}
                     </button>
                   </div>
+                </div>
+              </>
+            )}
+
+            {moreMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={closeMoreMenu} />
+                <div className="absolute right-2 top-full z-50 mt-1 w-64 overflow-hidden rounded-md border border-[#30363d] bg-[#161b22] shadow-xl shadow-black/40">
+                  {moreView === "root" && (
+                    <div className="py-1">
+                      <button
+                        type="button"
+                        disabled={changedFiles.length === 0}
+                        onClick={() => {
+                          closeMoreMenu();
+                          handleStageAll();
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d] disabled:opacity-40"
+                      >
+                        <Plus size={13} />
+                        Stage All Changes
+                      </button>
+                      <button
+                        type="button"
+                        disabled={stagedFiles.length === 0}
+                        onClick={() => {
+                          closeMoreMenu();
+                          handleUnstageAll();
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d] disabled:opacity-40"
+                      >
+                        <Minus size={13} />
+                        Unstage All Changes
+                      </button>
+
+                      <div className="my-1 h-px bg-[#30363d]" />
+
+                      <button
+                        type="button"
+                        onClick={() => openMoreView("delete-branch")}
+                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d]"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Trash2 size={13} />
+                          Delete Branch
+                        </span>
+                        <ChevronRight size={13} className="text-[#6e7681]" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openMoreView("remotes")}
+                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d]"
+                      >
+                        <span className="flex items-center gap-2">
+                          <GitBranch size={13} />
+                          Remotes
+                        </span>
+                        <ChevronRight size={13} className="text-[#6e7681]" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openMoreView("tags")}
+                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d]"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Tag size={13} />
+                          Tags
+                        </span>
+                        <ChevronRight size={13} className="text-[#6e7681]" />
+                      </button>
+                    </div>
+                  )}
+
+                  {moreView !== "root" && (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setMoreView("root")}
+                        className="flex w-full items-center gap-1.5 border-b border-[#30363d] px-3 py-2 text-left text-[11px] font-semibold text-[#c9d1d9] hover:bg-[#21262d]"
+                      >
+                        <ChevronLeft size={13} />
+                        {moreView === "delete-branch" && "DELETE BRANCH"}
+                        {moreView === "remotes" && "REMOTES"}
+                        {moreView === "tags" && "TAGS"}
+                      </button>
+
+                      {moreView === "delete-branch" && (
+                        <div className="max-h-48 overflow-auto py-1">
+                          {branches.filter((b) => b !== currentBranch).length === 0 ? (
+                            <div className="px-3 py-2 text-[11px] text-[#6e7681]">No other branches</div>
+                          ) : (
+                            branches
+                              .filter((branch) => branch !== currentBranch)
+                              .map((branch) => (
+                                <div
+                                  key={branch}
+                                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-[#21262d]"
+                                >
+                                  <span className="min-w-0 flex-1 truncate text-xs text-[#c9d1d9]">{branch}</span>
+                                  <button
+                                    type="button"
+                                    title={`Delete ${branch}`}
+                                    onClick={() => handleDeleteBranch(branch)}
+                                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-[#f85149] opacity-0 hover:bg-[#30363d] group-hover:opacity-100"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              ))
+                          )}
+                        </div>
+                      )}
+
+                      {moreView === "remotes" && (
+                        <>
+                          <div className="max-h-40 overflow-auto py-1">
+                            {remotes.length === 0 ? (
+                              <div className="px-3 py-2 text-[11px] text-[#6e7681]">No remotes configured</div>
+                            ) : (
+                              remotes.map((remote) => (
+                                <div
+                                  key={remote.remote}
+                                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-[#21262d]"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-xs text-[#e6edf3]">{remote.remote}</p>
+                                    <p className="truncate text-[10px] text-[#6e7681]">{remote.url}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    title={`Remove ${remote.remote}`}
+                                    onClick={() => handleDeleteRemote(remote.remote)}
+                                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-[#f85149] opacity-0 hover:bg-[#30363d] group-hover:opacity-100"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-1.5 border-t border-[#30363d] p-2">
+                            <input
+                              value={newRemoteName}
+                              onChange={(event) => setNewRemoteName(event.target.value)}
+                              placeholder="Name (e.g. origin)"
+                              className="h-7 rounded border border-[#30363d] bg-[#0d1117] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]"
+                            />
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                value={newRemoteUrl}
+                                onChange={(event) => setNewRemoteUrl(event.target.value)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") handleAddRemote();
+                                }}
+                                placeholder="Repository URL"
+                                className="h-7 min-w-0 flex-1 rounded border border-[#30363d] bg-[#0d1117] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]"
+                              />
+                              <button
+                                type="button"
+                                title="Add remote"
+                                disabled={!newRemoteName.trim() || !newRemoteUrl.trim()}
+                                onClick={handleAddRemote}
+                                className="grid h-7 w-7 shrink-0 place-items-center rounded bg-[#007acc] text-white transition hover:bg-[#1685d1] disabled:opacity-40"
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {moreView === "tags" && (
+                        <>
+                          <div className="max-h-40 overflow-auto py-1">
+                            {tags.length === 0 ? (
+                              <div className="px-3 py-2 text-[11px] text-[#6e7681]">No tags yet</div>
+                            ) : (
+                              tags.map((tagName) => (
+                                <div key={tagName} className="flex items-center gap-2 px-3 py-1.5">
+                                  <Tag size={12} className="shrink-0 text-[#8b949e]" />
+                                  <span className="truncate text-xs text-[#c9d1d9]">{tagName}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 border-t border-[#30363d] p-2">
+                            <input
+                              value={newTagName}
+                              onChange={(event) => setNewTagName(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") handleCreateTag();
+                              }}
+                              placeholder="New tag name"
+                              className="h-7 min-w-0 flex-1 rounded border border-[#30363d] bg-[#0d1117] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]"
+                            />
+                            <button
+                              type="button"
+                              title="Create tag"
+                              disabled={!newTagName.trim()}
+                              onClick={handleCreateTag}
+                              className="grid h-7 w-7 shrink-0 place-items-center rounded bg-[#007acc] text-white transition hover:bg-[#1685d1] disabled:opacity-40"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -573,20 +963,60 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
               {history.length === 0 ? (
                 <div className="px-3 py-2 text-[11px] text-[#6e7681]">No commits yet</div>
               ) : (
-                history.map((entry) => (
-                  <div key={entry.oid} className="flex items-start gap-2 px-3 py-1.5 hover:bg-[#21262d]">
-                    <GitCommit size={13} className="mt-0.5 shrink-0 text-[#8b949e]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs text-[#e6edf3]">{entry.commit.message.split("\n")[0]}</p>
-                      <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#6e7681]">
-                        <span className="font-mono text-[#79c0ff]">{entry.oid.slice(0, 7)}</span>
-                        <span>{entry.commit.author.name}</span>
-                        <span>·</span>
-                        <span>{relativeTime(entry.commit.author.timestamp)}</span>
-                      </p>
+                history.map((entry) => {
+                  const isExpanded = expandedCommit === entry.oid;
+                  const changes = entry.commit.changes ?? [];
+
+                  return (
+                    <div key={entry.oid} className="border-b border-[#1c2128] last:border-b-0">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedCommit(isExpanded ? null : entry.oid)}
+                        className="flex w-full items-start gap-2 px-3 py-1.5 text-left hover:bg-[#21262d]"
+                      >
+                        <GitCommit size={13} className="mt-0.5 shrink-0 text-[#8b949e]" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs text-[#e6edf3]">{entry.commit.message.split("\n")[0]}</p>
+                          <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#6e7681]">
+                            <span className="font-mono text-[#79c0ff]">{entry.oid.slice(0, 7)}</span>
+                            <span>{entry.commit.author.name}</span>
+                            <span>·</span>
+                            <span>{relativeTime(entry.commit.author.timestamp)}</span>
+                          </p>
+                        </div>
+                        <ChevronDown
+                          size={12}
+                          className={`mt-1 shrink-0 text-[#6e7681] transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        />
+                      </button>
+
+                      {isExpanded && (
+                        <div className="pb-2 pl-8 pr-3">
+                          {changes.length === 0 ? (
+                            <p className="py-1 text-[11px] text-[#6e7681]">No file changes recorded.</p>
+                          ) : (
+                            changes.map(([newOid, oldOid, filepath]) => {
+                              const badge = changeBadge(newOid as string | null, oldOid as string | null);
+                              const { name, dir } = splitPath(filepath as string);
+
+                              return (
+                                <div key={filepath as string} className="flex items-center gap-2 py-0.5">
+                                  <span className="min-w-0 flex-1 truncate text-[11px]">
+                                    <span className="text-[#c9d1d9]">{name}</span>
+                                    {dir && <span className="ml-1 text-[#6e7681]">{dir}</span>}
+                                  </span>
+                                  <span className={`shrink-0 text-[11px] font-semibold ${badge.className}`}>
+                                    {badge.letter}
+                                  </span>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </section>
           </div>

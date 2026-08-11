@@ -145,19 +145,9 @@ export async function getGitLog(depth = 20) {
     fs: gitFs,
     dir: ".",
     depth,
-  });
-}
-
-/* -------------------------------------------------------------------------- */
-/* Diff                                                                        */
-/* -------------------------------------------------------------------------- */
-
-export async function getDiff() {
-  await getWebContainer();
-
-  return await git.diff({
-    fs: gitFs,
-    dir: ".",
+    // Populates commit.changes as [newOid, oldOid, filepath] tuples so the
+    // History panel can show what a commit touched without a separate diff call.
+    includeChanges: true,
   });
 }
 
