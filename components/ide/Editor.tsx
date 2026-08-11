@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import MonacoEditor from "@monaco-editor/react";
-import { FileCode2, X } from "lucide-react";
+import MonacoEditor, { DiffEditor } from "@monaco-editor/react";
+import { FileCode2, GitCompare, X } from "lucide-react";
 import { WebContainer } from "@webcontainer/api";
 import SaveDialog from "./SaveDialog";
 
@@ -12,12 +12,24 @@ type OpenFile = {
   isDirty: boolean;
 };
 
+export type DiffTab = {
+  id: string;
+  path: string;
+  label: string;
+  original: string;
+  modified: string;
+};
+
 type EditorProps = {
   webcontainer: WebContainer | null;
   openedFiles: OpenFile[];
   setOpenedFiles: React.Dispatch<React.SetStateAction<OpenFile[]>>;
   activeFilePath: string;
   setActiveFilePath: React.Dispatch<React.SetStateAction<string>>;
+  diffTabs: DiffTab[];
+  setDiffTabs: React.Dispatch<React.SetStateAction<DiffTab[]>>;
+  activeDiffId: string | null;
+  setActiveDiffId: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
 const languagesByExtension: Record<string, string> = {
@@ -45,10 +57,20 @@ export default function Editor({
   setOpenedFiles,
   activeFilePath,
   setActiveFilePath,
+  diffTabs,
+  setDiffTabs,
+  activeDiffId,
+  setActiveDiffId,
 }: EditorProps) {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [pendingClosePath, setPendingClosePath] = useState<string | null>(null);
-  const currentFile = openedFiles.find((file) => file.path === activeFilePath) ?? null;
+  const activeDiff = diffTabs.find((diff) => diff.id === activeDiffId) ?? null;
+  const currentFile = activeDiff ? null : openedFiles.find((file) => file.path === activeFilePath) ?? null;
+
+  function closeDiffTab(id: string) {
+    setDiffTabs((previousDiffs) => previousDiffs.filter((diff) => diff.id !== id));
+    if (activeDiffId === id) setActiveDiffId(null);
+  }
 
   const saveFile = useCallback(async (path: string) => {
     if (!webcontainer) return;
@@ -95,60 +117,116 @@ export default function Editor({
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") return;
 
       event.preventDefault();
-      if (activeFilePath) void saveFile(activeFilePath);
+      if (activeFilePath && !activeDiffId) void saveFile(activeFilePath);
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeFilePath, saveFile]);
+  }, [activeFilePath, activeDiffId, saveFile]);
 
   return (
     <section className="flex h-full min-w-0 flex-col bg-[#0d1117]">
       <div className="flex h-9 shrink-0 overflow-x-auto border-b border-[#30363d] bg-[#161b22]">
-        {openedFiles.length === 0 ? (
+        {openedFiles.length === 0 && diffTabs.length === 0 ? (
           <span className="flex items-center px-3 text-[11px] text-[#6e7681]">No open editors</span>
-        ) : openedFiles.map((file) => {
-          const isActive = file.path === activeFilePath;
+        ) : (
+          <>
+            {openedFiles.map((file) => {
+              const isActive = !activeDiff && file.path === activeFilePath;
 
-          return (
-            <div
-              key={file.path}
-              onClick={() => setActiveFilePath(file.path)}
-              onMouseEnter={() => setHoveredTab(file.path)}
-              onMouseLeave={() => setHoveredTab(null)}
-              className={`group relative flex h-full min-w-[140px] max-w-[220px] cursor-pointer items-center gap-2 border-r border-[#30363d] px-3 text-[12px] transition ${
-                isActive
-                  ? "bg-[#0d1117] text-[#e6edf3]"
-                  : "bg-[#161b22] text-[#8b949e] hover:bg-[#1c2128] hover:text-[#c9d1d9]"
-              }`}
-            >
-              {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#007acc]" />}
-              <FileCode2 size={14} className="shrink-0 text-[#4fc1ff]" />
-              <span className="min-w-0 flex-1 truncate">{file.path.split("/").pop()}</span>
-              <span className="grid h-4 w-4 shrink-0 place-items-center">
-                {hoveredTab === file.path ? (
+              return (
+                <div
+                  key={file.path}
+                  onClick={() => {
+                    setActiveDiffId(null);
+                    setActiveFilePath(file.path);
+                  }}
+                  onMouseEnter={() => setHoveredTab(file.path)}
+                  onMouseLeave={() => setHoveredTab(null)}
+                  className={`group relative flex h-full min-w-[140px] max-w-[220px] cursor-pointer items-center gap-2 border-r border-[#30363d] px-3 text-[12px] transition ${
+                    isActive
+                      ? "bg-[#0d1117] text-[#e6edf3]"
+                      : "bg-[#161b22] text-[#8b949e] hover:bg-[#1c2128] hover:text-[#c9d1d9]"
+                  }`}
+                >
+                  {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#007acc]" />}
+                  <FileCode2 size={14} className="shrink-0 text-[#4fc1ff]" />
+                  <span className="min-w-0 flex-1 truncate">{file.path.split("/").pop()}</span>
+                  <span className="grid h-4 w-4 shrink-0 place-items-center">
+                    {hoveredTab === file.path ? (
+                      <button
+                        type="button"
+                        aria-label={`Close ${file.path.split("/").pop()}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          closeTab(file.path);
+                        }}
+                        className="grid h-4 w-4 place-items-center rounded text-[#8b949e] hover:bg-[#30363d] hover:text-white"
+                      >
+                        <X size={12} />
+                      </button>
+                    ) : file.isDirty ? (
+                      <span className="text-[10px] text-[#c9d1d9]">●</span>
+                    ) : null}
+                  </span>
+                </div>
+              );
+            })}
+
+            {diffTabs.map((diff) => {
+              const isActive = diff.id === activeDiffId;
+
+              return (
+                <div
+                  key={diff.id}
+                  onClick={() => setActiveDiffId(diff.id)}
+                  onMouseEnter={() => setHoveredTab(diff.id)}
+                  onMouseLeave={() => setHoveredTab(null)}
+                  className={`group relative flex h-full min-w-[140px] max-w-[220px] cursor-pointer items-center gap-2 border-r border-[#30363d] px-3 text-[12px] transition ${
+                    isActive
+                      ? "bg-[#0d1117] text-[#e6edf3]"
+                      : "bg-[#161b22] text-[#8b949e] hover:bg-[#1c2128] hover:text-[#c9d1d9]"
+                  }`}
+                >
+                  {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#a371f7]" />}
+                  <GitCompare size={14} className="shrink-0 text-[#a371f7]" />
+                  <span className="min-w-0 flex-1 truncate">{diff.label}</span>
                   <button
                     type="button"
-                    aria-label={`Close ${file.path.split("/").pop()}`}
+                    aria-label={`Close ${diff.label}`}
                     onClick={(event) => {
                       event.stopPropagation();
-                      closeTab(file.path);
+                      closeDiffTab(diff.id);
                     }}
-                    className="grid h-4 w-4 place-items-center rounded text-[#8b949e] hover:bg-[#30363d] hover:text-white"
+                    className="grid h-4 w-4 shrink-0 place-items-center rounded text-[#8b949e] opacity-0 hover:bg-[#30363d] hover:text-white group-hover:opacity-100"
                   >
                     <X size={12} />
                   </button>
-                ) : file.isDirty ? (
-                  <span className="text-[10px] text-[#c9d1d9]">●</span>
-                ) : null}
-              </span>
-            </div>
-          );
-        })}
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 bg-[#0d1117]">
-        {currentFile ? (
+        {activeDiff ? (
+          <DiffEditor
+            height="100%"
+            language={languageForPath(activeDiff.path)}
+            theme="vs-dark"
+            original={activeDiff.original}
+            modified={activeDiff.modified}
+            options={{
+              automaticLayout: true,
+              fontFamily: "var(--font-geist-mono), Menlo, Monaco, Consolas, monospace",
+              fontSize: 13,
+              minimap: { enabled: false },
+              readOnly: true,
+              renderSideBySide: true,
+            }}
+          />
+        ) : currentFile ? (
           <MonacoEditor
             height="100%"
             language={languageForPath(currentFile.path)}

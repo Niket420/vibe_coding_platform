@@ -18,10 +18,11 @@ import { readDirectory } from "@/lib/filesystem";
 import { FileTreeNode } from "@/types/file-tree";
 import IDEHeader from "@/components/ide/IDEHeader";
 import FileExplorer from "@/components/ide/FileExplorer";
-import Editor from "@/components/ide/Editor";
+import Editor, { type DiffTab } from "@/components/ide/Editor";
 import Preview from "@/components/ide/Preview";
 import IDETerminal from "@/components/ide/Terminal";
 import GitSourceControl from "@/components/ide/GitSourceControl";
+import { readBlobText, type GitLogEntry } from "@/lib/git";
 
 type OpenFile = {
   path: string;
@@ -42,6 +43,8 @@ export default function PlaygroundPage() {
   const [fileTree, setFileTree] = useState<FileTreeNode[]>([]);
   const [openedFiles, setOpenedFiles] = useState<OpenFile[]>([]);
   const [activeFilePath, setActiveFilePath] = useState("");
+  const [diffTabs, setDiffTabs] = useState<DiffTab[]>([]);
+  const [activeDiffId, setActiveDiffId] = useState<string | null>(null);
   const [activeActivity, setActiveActivity] = useState("explorer");
   const [bottomPanel, setBottomPanel] = useState<"terminal" | "preview">(
     "terminal",
@@ -112,6 +115,8 @@ export default function PlaygroundPage() {
   async function openFile(path: string) {
     if (!webcontainer) return;
 
+    setActiveDiffId(null);
+
     const existing = openedFiles.find((file) => file.path === path);
 
     if (existing) {
@@ -126,6 +131,33 @@ export default function PlaygroundPage() {
       { path, content, isDirty: false },
     ]);
     setActiveFilePath(path);
+  }
+
+  async function openDiff(entry: GitLogEntry, filepath: string) {
+    const change = entry.commit.changes?.find(([, , changedPath]) => changedPath === filepath);
+    if (!change) return;
+
+    const [newOid, oldOid] = change as [string | null, string | null, string];
+    const id = `${entry.oid}:${filepath}`;
+
+    if (diffTabs.some((diff) => diff.id === id)) {
+      setActiveDiffId(id);
+      return;
+    }
+
+    const [original, modified] = await Promise.all([readBlobText(oldOid), readBlobText(newOid)]);
+
+    setDiffTabs((previousDiffs) => [
+      ...previousDiffs,
+      {
+        id,
+        path: filepath,
+        label: `${filepath.split("/").pop()} (${entry.oid.slice(0, 7)})`,
+        original,
+        modified,
+      },
+    ]);
+    setActiveDiffId(id);
   }
 
   useEffect(() => {
@@ -226,6 +258,7 @@ export default function PlaygroundPage() {
                     onRefreshExplorer={async () => {
                       await refreshFileTree(webcontainer);
                     }}
+                    onOpenDiff={openDiff}
                   />
                 ) : (
                   <FileExplorer
@@ -254,6 +287,10 @@ export default function PlaygroundPage() {
                   setOpenedFiles={setOpenedFiles}
                   activeFilePath={activeFilePath}
                   setActiveFilePath={setActiveFilePath}
+                  diffTabs={diffTabs}
+                  setDiffTabs={setDiffTabs}
+                  activeDiffId={activeDiffId}
+                  setActiveDiffId={setActiveDiffId}
                 />
               </Panel>
             </Group>

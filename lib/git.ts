@@ -151,6 +151,23 @@ export async function getGitLog(depth = 20) {
   });
 }
 
+// Reads a blob directly by its object id — the ids that show up in
+// commit.changes tuples — and decodes it as text for diff viewing.
+// A null oid means "this side of the diff doesn't exist" (added/deleted file).
+export async function readBlobText(oid: string | null) {
+  if (!oid) return "";
+
+  await getWebContainer();
+
+  const { blob } = await git.readBlob({
+    fs: gitFs,
+    dir: ".",
+    oid,
+  });
+
+  return new TextDecoder().decode(blob);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Branches                                                                    */
 /* -------------------------------------------------------------------------- */

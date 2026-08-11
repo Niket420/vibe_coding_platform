@@ -56,6 +56,7 @@ type MoreView = "root" | "delete-branch" | "remotes" | "tags";
 
 type GitSourceControlProps = {
   onRefreshExplorer?: () => Promise<void>;
+  onOpenDiff?: (entry: GitLogEntry, filepath: string) => void;
 };
 
 // Mirrors isomorphic-git's statusMatrix table: [HEAD, WORKDIR, STAGE] each 0/1/2(/3).
@@ -99,7 +100,7 @@ function relativeTime(unixSeconds: number) {
   return `${Math.floor(months / 12)}y ago`;
 }
 
-export default function GitSourceControl({ onRefreshExplorer }: GitSourceControlProps) {
+export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitSourceControlProps) {
   const [initialized, setInitialized] = useState<boolean | null>(null);
   const [status, setStatus] = useState<GitStatusRow[]>([]);
   const [history, setHistory] = useState<GitLogEntry[]>([]);
@@ -1000,7 +1001,13 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
                               const { name, dir } = splitPath(filepath as string);
 
                               return (
-                                <div key={filepath as string} className="flex items-center gap-2 py-0.5">
+                                <button
+                                  type="button"
+                                  key={filepath as string}
+                                  onClick={() => onOpenDiff?.(entry, filepath as string)}
+                                  title="View diff"
+                                  className="flex w-full items-center gap-2 rounded py-0.5 text-left hover:bg-[#21262d]"
+                                >
                                   <span className="min-w-0 flex-1 truncate text-[11px]">
                                     <span className="text-[#c9d1d9]">{name}</span>
                                     {dir && <span className="ml-1 text-[#6e7681]">{dir}</span>}
@@ -1008,7 +1015,7 @@ export default function GitSourceControl({ onRefreshExplorer }: GitSourceControl
                                   <span className={`shrink-0 text-[11px] font-semibold ${badge.className}`}>
                                     {badge.letter}
                                   </span>
-                                </div>
+                                </button>
                               );
                             })
                           )}
