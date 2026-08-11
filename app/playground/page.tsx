@@ -21,7 +21,6 @@ import FileExplorer from "@/components/ide/FileExplorer";
 import Editor from "@/components/ide/Editor";
 import Preview from "@/components/ide/Preview";
 import IDETerminal from "@/components/ide/Terminal";
-import { initGit,getGitStatus,unstageFile,stageFile,commitChanges } from "@/lib/git";
 import GitSourceControl from "@/components/ide/GitSourceControl";
 
 type OpenFile = {
@@ -138,9 +137,6 @@ export default function PlaygroundPage() {
       });
       setWebcontainer(wc);
       await refreshFileTree(wc);
-      const status = await getGitStatus();
-
-      console.log("Git status:", status);
     }
 
     init();

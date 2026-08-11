@@ -1,12 +1,34 @@
-import git from "isomorphic-git";
+import git, { type ReadCommitResult } from "isomorphic-git";
 import http from "isomorphic-git/http/web";
 
 import { getWebContainer } from "@/lib/webcontainer";
 import { gitFs } from "@/lib/git-fs";
 
+export type GitLogEntry = ReadCommitResult;
+
 /* -------------------------------------------------------------------------- */
 /* Repository                                                                 */
 /* -------------------------------------------------------------------------- */
+
+// isomorphic-git's init() no-ops once .git/config exists, even if an earlier
+// init was interrupted before HEAD got written, and other commands (statusMatrix)
+// tolerate a missing HEAD by treating it as "no commits yet" — only commit()
+// crashes on it. So this can't be left to run once behind an "Initialize" button;
+// it has to self-heal on every read, before anything gets a chance to trip on it.
+async function ensureHead() {
+  const gitdirExists = await gitFs.promises
+    .stat(".git")
+    .then(() => true)
+    .catch(() => false);
+
+  if (!gitdirExists) return;
+
+  const head = await gitFs.promises.readFile(".git/HEAD", "utf8").catch(() => null);
+
+  if (!head) {
+    await gitFs.promises.writeFile(".git/HEAD", "ref: refs/heads/main\n");
+  }
+}
 
 export async function initGit() {
   await getWebContainer();
@@ -16,6 +38,8 @@ export async function initGit() {
     dir: ".",
     defaultBranch: "main",
   });
+
+  await ensureHead();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -24,6 +48,7 @@ export async function initGit() {
 
 export async function getGitStatus() {
   await getWebContainer();
+  await ensureHead();
 
   return await git.statusMatrix({
     fs: gitFs,
@@ -99,6 +124,7 @@ export async function commitChanges(
   }
 ) {
   await getWebContainer();
+  await ensureHead();
 
   return await git.commit({
     fs: gitFs,
