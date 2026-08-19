@@ -13,6 +13,7 @@ import {
   ChevronRight,
   GitBranch,
   GitCommit,
+  GitFork,
   History,
   Loader2,
   Minus,
@@ -126,6 +127,7 @@ export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitS
   const [tags, setTags] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState("");
   const [githubPickerOpen, setGithubPickerOpen] = useState(false);
+  const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
 
   function notify(text: string, nextTone: Tone = "info") {
     setMessage(text);
@@ -170,6 +172,33 @@ export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitS
       setInitialized(false);
     }
   }
+
+  async function checkGithubStatus() {
+    try {
+      const response = await fetch("/api/github/status");
+      const data = await response.json();
+      setGithubConnected(response.ok && data.success ? !!data.connected : null);
+    } catch {
+      setGithubConnected(null);
+    }
+  }
+
+  function handleConnectGithub() {
+    window.open("/api/github/install", "_blank", "noopener,noreferrer");
+  }
+
+  // The GitHub App install flow opens in a new tab (it ends on /api/github/callback,
+  // outside this SPA), so re-check connection status whenever the user tabs back in.
+  useEffect(() => {
+    checkGithubStatus();
+
+    function onFocus() {
+      checkGithubStatus();
+    }
+
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   // Initial load, plus a live filesystem watch so edits made in the Editor,
   // Terminal, or File Explorer show up under Changes without a manual refresh.
@@ -692,6 +721,26 @@ function handleClone() {
                   {moreView === "root" && (
                     <div className="py-1">
                       <button
+  type="button"
+  disabled={githubConnected === true}
+  onClick={() => {
+    closeMoreMenu();
+    handleConnectGithub();
+  }}
+  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d] disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
+>
+  <GitFork size={13} />
+  {githubConnected ? (
+    <span className="flex items-center gap-1.5">
+      GitHub Connected
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#3fb950]" />
+    </span>
+  ) : (
+    "Connect GitHub"
+  )}
+</button>
+
+<button
   type="button"
   onClick={() => {
     closeMoreMenu();
