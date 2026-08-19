@@ -22,6 +22,7 @@ import Editor, { type DiffTab } from "@/components/ide/Editor";
 import Preview from "@/components/ide/Preview";
 import IDETerminal from "@/components/ide/Terminal";
 import GitSourceControl from "@/components/ide/GitSourceControl";
+import { ToastProvider } from "@/components/ui/toast";
 import { readBlobText, type GitLogEntry } from "@/lib/git";
 
 type OpenFile = {
@@ -176,27 +177,30 @@ export default function PlaygroundPage() {
 
   if (!webcontainer) {
     return (
-      <main className="grid min-h-screen place-items-center bg-[#0d1117] text-[#c9d1d9]">
-        <div className="flex flex-col items-center gap-4">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#007acc] text-white shadow-xl shadow-[#007acc]/25">
-            <Code2 size={25} />
-          </span>
-          <div className="text-center">
-            <p className="text-sm font-medium text-white">
-              Preparing your workspace
-            </p>
-            <p className="mt-1 text-xs text-[#8b949e]">
-              Booting the browser development environment…
-            </p>
+      <ToastProvider>
+        <main className="grid min-h-screen place-items-center bg-[#0d1117] text-[#c9d1d9]">
+          <div className="flex flex-col items-center gap-4">
+            <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#007acc] text-white shadow-xl shadow-[#007acc]/25">
+              <Code2 size={25} />
+            </span>
+            <div className="text-center">
+              <p className="text-sm font-medium text-white">
+                Preparing your workspace
+              </p>
+              <p className="mt-1 text-xs text-[#8b949e]">
+                Booting the browser development environment…
+              </p>
+            </div>
+            <span className="h-1 w-32 overflow-hidden rounded-full bg-[#21262d]">
+              <span className="block h-full w-2/3 animate-pulse rounded-full bg-[#007acc]" />
+            </span>
           </div>
-          <span className="h-1 w-32 overflow-hidden rounded-full bg-[#21262d]">
-            <span className="block h-full w-2/3 animate-pulse rounded-full bg-[#007acc]" />
-          </span>
-        </div>
-      </main>
+        </main>
+      </ToastProvider>
     );
   }
   return (
+    <ToastProvider>
     <main className="flex h-screen flex-col overflow-hidden bg-[#0d1117] font-sans text-[#e6edf3]">
       <header className="h-12 shrink-0 border-b border-[#30363d]">
         <IDEHeader onRun={() => setBottomPanel("terminal")} />
@@ -356,5 +360,6 @@ export default function PlaygroundPage() {
         <span>Spaces: 2 &nbsp; UTF-8</span>
       </footer>
     </main>
+    </ToastProvider>
   );
 }

@@ -25,6 +25,7 @@ import {
   Upload,
 } from "lucide-react";
 
+import { useToast } from "@/components/ui/toast";
 import { getWebContainer } from "@/lib/webcontainer";
 import {
   initGit,
@@ -129,9 +130,15 @@ export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitS
   const [githubPickerOpen, setGithubPickerOpen] = useState(false);
   const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
 
+  const { push: pushToast } = useToast();
+
   function notify(text: string, nextTone: Tone = "info") {
     setMessage(text);
     setTone(nextTone);
+
+    if (nextTone === "error") {
+      pushToast({ tone: "error", title: text });
+    }
   }
 
   async function fetchGithubToken() {
@@ -511,47 +518,11 @@ function handleClone() {
       </div>
 
       <GitHubRepositories
-        onClone={async (repository) => {
-          try {
-            setInitializing(true);
-
-            const response = await fetch("/api/github/clone", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                cloneUrl: repository.cloneUrl,
-              }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-              throw new Error(data.error || "Clone preparation failed");
-            }
-
-            console.log("GitHub clone response:", data);
-
-            setGithubPickerOpen(false);
-
-            notify(
-              `GitHub access confirmed for ${repository.fullName}.`,
-              "success",
-            );
-          } catch (error) {
-
-            console.error("GitHub clone error:", error);
-
-            notify(
-              error instanceof Error
-                ? error.message
-                : "Could not connect to GitHub repository.",
-              "error",
-            );
-          } finally {
-            setInitializing(false);
-          }
+        onCloned={async (repository) => {
+          setGithubPickerOpen(false);
+          notify(`Cloned ${repository.fullName}.`, "success");
+          await refreshGit();
+          await onRefreshExplorer?.();
         }}
       />
     </div>

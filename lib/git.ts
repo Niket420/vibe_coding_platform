@@ -323,22 +323,51 @@ export async function pushRemote(
 export async function cloneRepository(
   url: string,
   token: string,
-  dir = "."
+  dir = ".",
+  options?: { force?: boolean }
 ) {
   await getWebContainer();
 
-  return await git.clone({
-  fs: gitFs,
-  http,
-  dir,
-  url,
-  singleBranch: false,
-  onAuth: () => ({
+  const onAuth = () => ({
     username: "x-access-token",
     password: token,
-  }),
-  corsProxy: "https://cors.isomorphic-git.org",
-});
+  });
+
+  if (!options?.force) {
+    return await git.clone({
+      fs: gitFs,
+      http,
+      dir,
+      url,
+      singleBranch: false,
+      onAuth,
+      corsProxy: "https://cors.isomorphic-git.org",
+    });
+  }
+
+  // Cloning into a non-empty working directory (e.g. a workspace that already has
+  // scratch files) throws CheckoutConflictError for any path both sides touch.
+  // Fetch and set up refs/remote without writing files, then force the checkout
+  // to overwrite just those conflicting paths instead of the whole workdir.
+  await git.clone({
+    fs: gitFs,
+    http,
+    dir,
+    url,
+    singleBranch: false,
+    noCheckout: true,
+    onAuth,
+    corsProxy: "https://cors.isomorphic-git.org",
+  });
+
+  const branch = await git.currentBranch({ fs: gitFs, dir, fullname: false });
+
+  return await git.checkout({
+    fs: gitFs,
+    dir,
+    ref: branch ?? undefined,
+    force: true,
+  });
 }
 
 /* -------------------------------------------------------------------------- */
