@@ -196,7 +196,6 @@ export default function PlaygroundPage() {
       </main>
     );
   }
-  console.log("Playground previewUrl:", previewUrl);
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-[#0d1117] font-sans text-[#e6edf3]">
       <header className="h-12 shrink-0 border-b border-[#30363d]">

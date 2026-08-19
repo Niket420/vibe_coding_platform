@@ -14,3 +14,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model GitHubConnection {
+  id             String   @id @default(cuid())
+  clerkUserId    String   @unique
+  installationId String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

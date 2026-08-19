@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import GitHubRepositories from "@/components/ide/GitHubRepositories";
 import {
   AlertCircle,
   ArrowDown,
@@ -58,6 +59,7 @@ type GitSourceControlProps = {
   onRefreshExplorer?: () => Promise<void>;
   onOpenDiff?: (entry: GitLogEntry, filepath: string) => void;
 };
+
 
 // Mirrors isomorphic-git's statusMatrix table: [HEAD, WORKDIR, STAGE] each 0/1/2(/3).
 function unstagedBadge(head: number, workdir: number) {
@@ -123,6 +125,7 @@ export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitS
   const [newRemoteUrl, setNewRemoteUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState("");
+  const [githubPickerOpen, setGithubPickerOpen] = useState(false);
 
   function notify(text: string, nextTone: Tone = "info") {
     setMessage(text);
@@ -196,24 +199,9 @@ export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitS
     }
   }
 
-  async function handleClone() {
-    const url = prompt("Repository URL to clone");
-    if (!url?.trim()) return;
-
-    try {
-      setInitializing(true);
-      await cloneRepository(url.trim());
-      await refreshGit();
-      await onRefreshExplorer?.();
-      notify("Repository cloned.", "success");
-    } catch (error) {
-      console.error("Clone error:", error);
-      notify("Clone failed — GitHub needs a CORS proxy for browser access.", "error");
-    } finally {
-      setInitializing(false);
-    }
-  }
-
+function handleClone() {
+  setGithubPickerOpen(true);
+}
   async function handleStage(path: string) {
     try {
       await stageFile(path);
@@ -461,6 +449,71 @@ export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitS
 
   return (
     <aside className="flex h-full min-w-0 flex-col bg-[#11161d] text-[#c9d1d9]">
+      {githubPickerOpen && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60">
+    <div className="w-[500px] max-h-[600px] overflow-auto rounded-lg border border-[#30363d] bg-[#161b22] p-4 shadow-2xl">
+      
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-[#e6edf3]">
+          Clone GitHub Repository
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => setGithubPickerOpen(false)}
+          className="rounded px-2 py-1 text-[#8b949e] hover:bg-[#30363d] hover:text-white"
+        >
+          ✕
+        </button>
+      </div>
+
+      <GitHubRepositories
+        onClone={async (repository) => {
+          try {
+            setInitializing(true);
+
+            const response = await fetch("/api/github/clone", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                cloneUrl: repository.cloneUrl,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || "Clone preparation failed");
+            }
+
+            console.log("GitHub clone response:", data);
+
+            setGithubPickerOpen(false);
+
+            notify(
+              `GitHub access confirmed for ${repository.fullName}.`,
+              "success",
+            );
+          } catch (error) {
+
+            console.error("GitHub clone error:", error);
+
+            notify(
+              error instanceof Error
+                ? error.message
+                : "Could not connect to GitHub repository.",
+              "error",
+            );
+          } finally {
+            setInitializing(false);
+          }
+        }}
+      />
+    </div>
+  </div>
+)}
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-[#30363d] px-3">
         <span className="text-[11px] font-semibold tracking-[0.12em]">SOURCE CONTROL</span>
 
@@ -624,6 +677,19 @@ export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitS
                 <div className="absolute right-2 top-full z-50 mt-1 w-64 overflow-hidden rounded-md border border-[#30363d] bg-[#161b22] shadow-xl shadow-black/40">
                   {moreView === "root" && (
                     <div className="py-1">
+                      <button
+  type="button"
+  onClick={() => {
+    closeMoreMenu();
+    handleClone();
+  }}
+  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d]"
+>
+  <GitBranch size={13} />
+  Clone GitHub Repository
+</button>
+
+<div className="my-1 h-px bg-[#30363d]" />
                       <button
                         type="button"
                         disabled={changedFiles.length === 0}
