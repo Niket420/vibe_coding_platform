@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       cloneUrl,
-      tokenCreated: !!token,
+      token,
     });
   } catch (error) {
     console.error("GitHub clone error:", error);

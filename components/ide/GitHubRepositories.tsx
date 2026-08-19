@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cloneRepository } from "@/lib/git";
 
 type Repository = {
   id: number;
@@ -8,8 +9,6 @@ type Repository = {
   fullName: string;
   cloneUrl: string;
 };
-
-
 
 export default function GitHubRepositories() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
@@ -72,21 +71,33 @@ export default function GitHubRepositories() {
 
             <button
               onClick={async () => {
-                const response = await fetch("/api/github/clone", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    cloneUrl: repo.cloneUrl,
-                  }),
-                });
+                try {
+                  const response = await fetch("/api/github/clone", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      cloneUrl: repo.cloneUrl,
+                    }),
+                  });
 
-                const data = await response.json();
+                  const data = await response.json();
 
-                console.log("Clone response:", data);
+                  if (!response.ok || !data.success) {
+                    throw new Error(
+                      data.error || "Failed to create GitHub token",
+                    );
+                  }
+
+                  // Now use the temporary GitHub token to clone
+                  await cloneRepository(repo.cloneUrl, data.token);
+
+                  console.log("Repository cloned successfully");
+                } catch (error) {
+                  console.error("Clone failed:", error);
+                }
               }}
-              className="rounded bg-blue-600 px-3 py-1 text-white"
             >
               Clone
             </button>

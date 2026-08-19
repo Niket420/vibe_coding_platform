@@ -132,6 +132,17 @@ export default function GitSourceControl({ onRefreshExplorer, onOpenDiff }: GitS
     setTone(nextTone);
   }
 
+  async function fetchGithubToken() {
+    const response = await fetch("/api/github/token");
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "Failed to get GitHub token");
+    }
+
+    return data.token as string;
+  }
+
   async function refreshGit() {
     try {
       const result = await getGitStatus();
@@ -280,7 +291,8 @@ function handleClone() {
   async function handleFetch() {
     try {
       setLoading(true);
-      await fetchRemote("origin");
+      const token = await fetchGithubToken();
+      await fetchRemote("origin", token);
       notify("Fetch completed.", "success");
       await refreshGit();
     } catch (error) {
@@ -294,7 +306,8 @@ function handleClone() {
   async function handlePull() {
     try {
       setLoading(true);
-      await pullRemote("origin");
+      const token = await fetchGithubToken();
+      await pullRemote("origin", undefined, token);
       notify("Pull completed.", "success");
       await refreshGit();
       await onRefreshExplorer?.();
@@ -309,7 +322,8 @@ function handleClone() {
   async function handlePush() {
     try {
       setLoading(true);
-      await pushRemote("origin");
+      const token = await fetchGithubToken();
+      await pushRemote("origin", undefined, token);
       notify("Push completed.", "success");
     } catch (error) {
       console.error("Push error:", error);

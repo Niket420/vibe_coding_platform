@@ -253,7 +253,8 @@ export async function deleteRemote(name: string) {
 /* -------------------------------------------------------------------------- */
 
 export async function fetchRemote(
-  remote = "origin"
+  remote = "origin",
+  token?: string
 ) {
   await getWebContainer();
 
@@ -262,6 +263,9 @@ export async function fetchRemote(
     http,
     dir: ".",
     remote,
+    onAuth: token
+      ? () => ({ username: "x-access-token", password: token })
+      : undefined,
   });
 }
 
@@ -271,7 +275,8 @@ export async function fetchRemote(
 
 export async function pullRemote(
   remote = "origin",
-  ref?: string
+  ref?: string,
+  token?: string
 ) {
   await getWebContainer();
 
@@ -282,6 +287,9 @@ export async function pullRemote(
     remote,
     ref,
     singleBranch: true,
+    onAuth: token
+      ? () => ({ username: "x-access-token", password: token })
+      : undefined,
   });
 }
 
@@ -291,7 +299,8 @@ export async function pullRemote(
 
 export async function pushRemote(
   remote = "origin",
-  ref?: string
+  ref?: string,
+  token?: string
 ) {
   await getWebContainer();
 
@@ -301,6 +310,9 @@ export async function pushRemote(
     dir: ".",
     remote,
     ref,
+    onAuth: token
+      ? () => ({ username: "x-access-token", password: token })
+      : undefined,
   });
 }
 
@@ -310,17 +322,23 @@ export async function pushRemote(
 
 export async function cloneRepository(
   url: string,
+  token: string,
   dir = "."
 ) {
   await getWebContainer();
 
   return await git.clone({
-    fs: gitFs,
-    http,
-    dir,
-    url,
-    singleBranch: false,
-  });
+  fs: gitFs,
+  http,
+  dir,
+  url,
+  singleBranch: false,
+  onAuth: () => ({
+    username: "x-access-token",
+    password: token,
+  }),
+  corsProxy: "https://cors.isomorphic-git.org",
+});
 }
 
 /* -------------------------------------------------------------------------- */

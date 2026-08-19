@@ -29,7 +29,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      tokenCreated: !!token,
+      token,
     });
   } catch (error) {
     console.error("GitHub token error:", error);
