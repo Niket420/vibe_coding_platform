@@ -22,6 +22,7 @@ import Editor, { type DiffTab } from "@/components/ide/Editor";
 import Preview from "@/components/ide/Preview";
 import IDETerminal from "@/components/ide/Terminal";
 import GitSourceControl from "@/components/ide/GitSourceControl";
+import AIAssistant from "@/components/ide/AI/AIAssistant";
 import { ToastProvider } from "@/components/ui/toast";
 import { readBlobText, type GitLogEntry } from "@/lib/git";
 
@@ -263,6 +264,8 @@ export default function PlaygroundPage() {
                     }}
                     onOpenDiff={openDiff}
                   />
+                ) : activeActivity === "assistant" ? (
+                  <AIAssistant activeFilePath={activeFilePath} />
                 ) : (
                   <FileExplorer
                     fileTree={fileTree}
