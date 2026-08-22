@@ -391,7 +391,7 @@ export default function PlaygroundPage() {
         </Group>
       </div>
 
-      <footer className="flex h-6 shrink-0 items-center justify-between border-t border-[#262626] bg-[#0a0a0a] px-3 text-[10px] font-medium text-[#8b949e]">
+      <footer className="flex h-6 shrink-0 items-center justify-between bg-[#f5f5f5] px-3 text-[10px] font-medium text-black">
         <span className="flex items-center gap-1.5">
           <GitBranch size={12} /> main
         </span>
