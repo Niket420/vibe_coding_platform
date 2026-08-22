@@ -29,7 +29,7 @@ export default function AIChat({ messages, isGenerating, modelLabel, onSuggestio
   if (messages.length === 0) {
     return (
       <div className="flex h-full min-h-0 flex-col items-center justify-center px-6 text-center">
-        <span className="grid h-11 w-11 place-items-center rounded-xl border border-[#30363d] bg-[#161b22] text-[#a371f7] shadow-lg shadow-black/20">
+        <span className="grid h-11 w-11 place-items-center rounded-xl border border-[#262626] bg-[#121212] text-[#a371f7] shadow-lg shadow-black/20">
           <Sparkles size={20} />
         </span>
         <p className="mt-4 text-sm font-medium text-[#e6edf3]">Ask CodeForge AI anything</p>
@@ -43,7 +43,7 @@ export default function AIChat({ messages, isGenerating, modelLabel, onSuggestio
               key={prompt}
               type="button"
               onClick={() => onSuggestion(prompt)}
-              className="rounded-md border border-[#30363d] bg-[#161b22] px-3 py-2 text-left text-[11.5px] text-[#8b949e] transition hover:border-[#3d444d] hover:text-[#e6edf3]"
+              className="rounded-md border border-[#262626] bg-[#121212] px-3 py-2 text-left text-[11.5px] text-[#8b949e] transition hover:border-[#333333] hover:text-[#e6edf3]"
             >
               {prompt}
             </button>

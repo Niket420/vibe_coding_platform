@@ -80,8 +80,8 @@ function TreeNode({ node, level }: { node: FileTreeNode; level: number }) {
         }}
         className={`flex h-7 w-full cursor-pointer items-center gap-1.5 px-2 text-left text-[13px] transition ${
           isActive
-            ? "bg-[#1f6feb]/25 text-[#f0f6fc]"
-            : "text-[#b1bac4] hover:bg-[#21262d] hover:text-[#e6edf3]"
+            ? "bg-white/10 text-[#f0f6fc]"
+            : "text-[#b1bac4] hover:bg-[#1a1a1a] hover:text-[#e6edf3]"
         }`}
         style={{ paddingLeft: `${level * 14 + 8}px` }}
         onClick={async () => {
@@ -129,7 +129,7 @@ function TreeNode({ node, level }: { node: FileTreeNode; level: number }) {
               }
               if (event.key === "Escape") ctx.cancelRename();
             }}
-            className="min-w-0 flex-1 rounded border border-[#4b5563] bg-[#0d1117] px-1 text-[13px] text-white outline-none"
+            className="min-w-0 flex-1 rounded border border-[#4b5563] bg-[#000000] px-1 text-[13px] text-white outline-none"
           />
         ) : (
           <span className="truncate">{node.name}</span>
@@ -160,7 +160,7 @@ function MenuItem({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-[#21262d] ${
+      className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] hover:bg-[#1a1a1a] ${
         danger ? "text-[#ff7b72]" : "text-[#c9d1d9]"
       }`}
     >
@@ -192,14 +192,14 @@ function ContextMenu({
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} onContextMenu={(e) => e.preventDefault()} />
       <div
-        className="fixed z-50 w-44 overflow-hidden rounded-md border border-[#30363d] bg-[#161b22] py-1 shadow-xl shadow-black/40"
+        className="fixed z-50 w-44 overflow-hidden rounded-md border border-[#262626] bg-[#121212] py-1 shadow-xl shadow-black/40"
         style={{ top: y, left: x }}
       >
         {node.type === "directory" && (
           <>
             <MenuItem icon={FilePlus2} label="New File" onClick={onNewFile} />
             <MenuItem icon={FolderPlus} label="New Folder" onClick={onNewFolder} />
-            <div className="my-1 h-px bg-[#30363d]" />
+            <div className="my-1 h-px bg-[#262626]" />
           </>
         )}
         <MenuItem icon={Pencil} label="Rename" onClick={onRename} />
@@ -287,8 +287,8 @@ export default function FileExplorer({
   };
 
   return (
-    <aside className="flex h-full min-w-0 flex-col bg-[#11161d]">
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-[#30363d] px-3">
+    <aside className="flex h-full min-w-0 flex-col bg-[#0a0a0a]">
+      <div className="flex h-10 shrink-0 items-center justify-between border-b border-[#262626] px-3">
         <span className="text-[11px] font-semibold tracking-[0.12em] text-[#c9d1d9]">
           EXPLORER
         </span>
@@ -298,7 +298,7 @@ export default function FileExplorer({
             title="New file"
             aria-label="New file"
             onClick={() => handleCreateFile()}
-            className="grid h-6 w-6 place-items-center rounded hover:bg-[#30363d] hover:text-white"
+            className="grid h-6 w-6 place-items-center rounded hover:bg-[#262626] hover:text-white"
           >
             <FilePlus2 size={15} />
           </button>
@@ -307,7 +307,7 @@ export default function FileExplorer({
             title="New folder"
             aria-label="New folder"
             onClick={() => handleCreateFolder()}
-            className="grid h-6 w-6 place-items-center rounded hover:bg-[#30363d] hover:text-white"
+            className="grid h-6 w-6 place-items-center rounded hover:bg-[#262626] hover:text-white"
           >
             <FolderPlus size={15} />
           </button>
@@ -316,7 +316,7 @@ export default function FileExplorer({
             title="Refresh explorer"
             aria-label="Refresh explorer"
             onClick={onRefresh}
-            className="grid h-6 w-6 place-items-center rounded hover:bg-[#30363d] hover:text-white"
+            className="grid h-6 w-6 place-items-center rounded hover:bg-[#262626] hover:text-white"
           >
             <RefreshCw size={14} />
           </button>
@@ -324,14 +324,14 @@ export default function FileExplorer({
             type="button"
             title="More actions"
             aria-label="More actions"
-            className="grid h-6 w-6 place-items-center rounded hover:bg-[#30363d] hover:text-white"
+            className="grid h-6 w-6 place-items-center rounded hover:bg-[#262626] hover:text-white"
           >
             <Ellipsis size={15} />
           </button>
         </div>
       </div>
 
-      <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-[#30363d] px-3 text-[11px] font-medium text-[#c9d1d9]">
+      <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-[#262626] px-3 text-[11px] font-medium text-[#c9d1d9]">
         <ChevronDown size={14} className="text-[#8b949e]" />
         <FolderOpen size={14} className="text-[#e3b341]" />
         WORKSPACE
@@ -346,7 +346,7 @@ export default function FileExplorer({
           </TreeContext.Provider>
         ) : (
           <div className="flex h-full min-h-44 flex-col items-center justify-center px-5 text-center">
-            <span className="grid h-9 w-9 place-items-center rounded-lg border border-[#30363d] bg-[#161b22] text-[#4fc1ff]">
+            <span className="grid h-9 w-9 place-items-center rounded-lg border border-[#262626] bg-[#121212] text-[#4fc1ff]">
               <FileCode2 size={18} />
             </span>
             <p className="mt-3 text-xs font-medium text-[#c9d1d9]">

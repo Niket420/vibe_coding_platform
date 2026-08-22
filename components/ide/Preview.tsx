@@ -11,9 +11,9 @@ export default function Preview({ previewUrl }: PreviewProps) {
   const [reloadKey, setReloadKey] = useState(0);
 
   return (
-    <div className="flex h-full min-h-0 items-center justify-center overflow-auto bg-[#0d1117] p-4">
-      <div className="w-full max-w-3xl overflow-hidden rounded-lg border border-[#30363d] bg-[#f6f8fa] shadow-xl shadow-black/25">
-        <div className="flex h-9 items-center gap-2 border-b border-[#d0d7de] bg-[#ffffff] px-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#000000]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f6f8fa]">
+        <div className="flex h-9 shrink-0 items-center gap-2 border-b border-[#d0d7de] bg-[#ffffff] px-3">
           <div className="flex gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
@@ -55,11 +55,11 @@ export default function Preview({ previewUrl }: PreviewProps) {
           <iframe
             key={reloadKey}
             src={previewUrl}
-            className="h-[500px] w-full border-0"
+            className="min-h-0 w-full flex-1 border-0"
             title="Preview"
           />
         ) : (
-          <div className="flex min-h-48 flex-col items-center justify-center px-6 py-8 text-center sm:min-h-56">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-8 text-center">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#ddf4ff] text-[#0969da]">
               <Play size={18} fill="currentColor" />
             </span>
@@ -69,7 +69,7 @@ export default function Preview({ previewUrl }: PreviewProps) {
             </p>
 
             <p className="mt-1 max-w-sm text-xs leading-5 text-[#57606a]">
-              Start a development server in the terminal, then switch back to this panel.
+              Start a development server in the terminal, then open this panel.
             </p>
           </div>
         )}

@@ -49,12 +49,12 @@ export default function AIInput({
   }
 
   return (
-    <div className="border-t border-[#30363d] p-2.5">
+    <div className="border-t border-[#262626] p-2.5">
       <div className="relative mb-1.5">
         <button
           type="button"
           onClick={() => setContextMenuOpen((open) => !open)}
-          className="flex items-center gap-1.5 rounded px-1.5 py-1 text-[11px] text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#c9d1d9]"
+          className="flex items-center gap-1.5 rounded px-1.5 py-1 text-[11px] text-[#8b949e] transition hover:bg-[#1a1a1a] hover:text-[#c9d1d9]"
         >
           <ActiveIcon size={12} />
           <span>
@@ -66,7 +66,7 @@ export default function AIInput({
         {contextMenuOpen && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setContextMenuOpen(false)} />
-            <div className="absolute bottom-full left-0 z-50 mb-1 w-52 overflow-hidden rounded-md border border-[#30363d] bg-[#161b22] py-1 shadow-xl shadow-black/40">
+            <div className="cf-dropdown absolute bottom-full left-0 z-50 mb-1 w-52 overflow-hidden rounded-md border border-[#262626] bg-[#121212] py-1 shadow-xl shadow-black/40">
               {CONTEXT_OPTIONS.map((option) => {
                 const OptionIcon = option.icon;
                 const isActive = option.id === contextMode;
@@ -79,10 +79,10 @@ export default function AIInput({
                       onContextModeChange(option.id);
                       setContextMenuOpen(false);
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition hover:bg-[#21262d]"
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition hover:bg-[#1a1a1a]"
                   >
                     <OptionIcon size={13} className="text-[#8b949e]" />
-                    <span className={isActive ? "font-medium text-[#58a6ff]" : "text-[#c9d1d9]"}>
+                    <span className={isActive ? "font-medium text-white" : "text-[#c9d1d9]"}>
                       {option.label}
                     </span>
                   </button>
@@ -93,7 +93,7 @@ export default function AIInput({
         )}
       </div>
 
-      <div className="rounded border border-[#30363d] bg-[#0d1117] transition focus-within:border-[#007acc]">
+      <div className="rounded border border-[#262626] bg-[#000000] transition focus-within:border-[#525252]">
         <textarea
           ref={textareaRef}
           value={value}
@@ -120,7 +120,7 @@ export default function AIInput({
               type="button"
               title="Stop generating"
               onClick={onStop}
-              className="flex h-6 items-center gap-1.5 rounded bg-[#30363d] px-2.5 text-[11px] font-medium text-[#e6edf3] transition hover:bg-[#3d444d]"
+              className="flex h-6 items-center gap-1.5 rounded bg-[#262626] px-2.5 text-[11px] font-medium text-[#e6edf3] transition hover:bg-[#333333]"
             >
               <Square size={11} fill="currentColor" />
               Stop
@@ -131,7 +131,7 @@ export default function AIInput({
               title="Send message"
               disabled={!value.trim()}
               onClick={handleSend}
-              className="grid h-6 w-6 place-items-center rounded bg-[#007acc] text-white transition hover:bg-[#1685d1] disabled:cursor-not-allowed disabled:opacity-40"
+              className="grid h-6 w-6 place-items-center rounded bg-white text-black transition hover:bg-[#d4d4d4] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Send size={12} />
             </button>

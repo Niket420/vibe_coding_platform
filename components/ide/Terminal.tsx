@@ -39,14 +39,14 @@ export default function IDETerminal({ onFilesystemChange }: IDETerminalProps) {
       fontSize: 13,
       lineHeight: 1.35,
       theme: {
-        background: "#0d1117",
-        black: "#0d1117",
+        background: "#000000",
+        black: "#000000",
         brightBlack: "#6e7681",
         cursor: "#e6edf3",
         foreground: "#c9d1d9",
         green: "#3fb950",
         red: "#ff7b72",
-        selectionBackground: "#1f6feb66",
+        selectionBackground: "#52525266",
       },
     });
 
@@ -115,5 +115,5 @@ export default function IDETerminal({ onFilesystemChange }: IDETerminalProps) {
     };
   }, []);
 
-  return <div ref={terminalRef} className="h-full w-full bg-[#0d1117] p-1" />;
+  return <div ref={terminalRef} className="h-full w-full bg-[#000000] p-1" />;
 }

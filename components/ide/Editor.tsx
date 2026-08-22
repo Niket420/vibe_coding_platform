@@ -125,8 +125,8 @@ export default function Editor({
   }, [activeFilePath, activeDiffId, saveFile]);
 
   return (
-    <section className="flex h-full min-w-0 flex-col bg-[#0d1117]">
-      <div className="flex h-9 shrink-0 overflow-x-auto border-b border-[#30363d] bg-[#161b22]">
+    <section className="flex h-full min-w-0 flex-col bg-[#000000]">
+      <div className="flex h-9 shrink-0 overflow-x-auto border-b border-[#262626] bg-[#121212]">
         {openedFiles.length === 0 && diffTabs.length === 0 ? (
           <span className="flex items-center px-3 text-[11px] text-[#6e7681]">No open editors</span>
         ) : (
@@ -143,13 +143,13 @@ export default function Editor({
                   }}
                   onMouseEnter={() => setHoveredTab(file.path)}
                   onMouseLeave={() => setHoveredTab(null)}
-                  className={`group relative flex h-full min-w-[140px] max-w-[220px] cursor-pointer items-center gap-2 border-r border-[#30363d] px-3 text-[12px] transition ${
+                  className={`group relative flex h-full min-w-[140px] max-w-[220px] cursor-pointer items-center gap-2 border-r border-[#262626] px-3 text-[12px] transition ${
                     isActive
-                      ? "bg-[#0d1117] text-[#e6edf3]"
-                      : "bg-[#161b22] text-[#8b949e] hover:bg-[#1c2128] hover:text-[#c9d1d9]"
+                      ? "bg-[#000000] text-[#e6edf3]"
+                      : "bg-[#121212] text-[#8b949e] hover:bg-[#1a1a1a] hover:text-[#c9d1d9]"
                   }`}
                 >
-                  {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#007acc]" />}
+                  {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-white" />}
                   <FileCode2 size={14} className="shrink-0 text-[#4fc1ff]" />
                   <span className="min-w-0 flex-1 truncate">{file.path.split("/").pop()}</span>
                   <span className="grid h-4 w-4 shrink-0 place-items-center">
@@ -161,7 +161,7 @@ export default function Editor({
                           event.stopPropagation();
                           closeTab(file.path);
                         }}
-                        className="grid h-4 w-4 place-items-center rounded text-[#8b949e] hover:bg-[#30363d] hover:text-white"
+                        className="grid h-4 w-4 place-items-center rounded text-[#8b949e] hover:bg-[#262626] hover:text-white"
                       >
                         <X size={12} />
                       </button>
@@ -182,10 +182,10 @@ export default function Editor({
                   onClick={() => setActiveDiffId(diff.id)}
                   onMouseEnter={() => setHoveredTab(diff.id)}
                   onMouseLeave={() => setHoveredTab(null)}
-                  className={`group relative flex h-full min-w-[140px] max-w-[220px] cursor-pointer items-center gap-2 border-r border-[#30363d] px-3 text-[12px] transition ${
+                  className={`group relative flex h-full min-w-[140px] max-w-[220px] cursor-pointer items-center gap-2 border-r border-[#262626] px-3 text-[12px] transition ${
                     isActive
-                      ? "bg-[#0d1117] text-[#e6edf3]"
-                      : "bg-[#161b22] text-[#8b949e] hover:bg-[#1c2128] hover:text-[#c9d1d9]"
+                      ? "bg-[#000000] text-[#e6edf3]"
+                      : "bg-[#121212] text-[#8b949e] hover:bg-[#1a1a1a] hover:text-[#c9d1d9]"
                   }`}
                 >
                   {isActive && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#a371f7]" />}
@@ -198,7 +198,7 @@ export default function Editor({
                       event.stopPropagation();
                       closeDiffTab(diff.id);
                     }}
-                    className="grid h-4 w-4 shrink-0 place-items-center rounded text-[#8b949e] opacity-0 hover:bg-[#30363d] hover:text-white group-hover:opacity-100"
+                    className="grid h-4 w-4 shrink-0 place-items-center rounded text-[#8b949e] opacity-0 hover:bg-[#262626] hover:text-white group-hover:opacity-100"
                   >
                     <X size={12} />
                   </button>
@@ -209,7 +209,7 @@ export default function Editor({
         )}
       </div>
 
-      <div className="min-h-0 flex-1 bg-[#0d1117]">
+      <div className="min-h-0 flex-1 bg-[#000000]">
         {activeDiff ? (
           <DiffEditor
             height="100%"
@@ -251,12 +251,12 @@ export default function Editor({
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-            <span className="grid h-12 w-12 place-items-center rounded-xl border border-[#30363d] bg-[#161b22] text-[#4fc1ff] shadow-lg shadow-black/20">
+            <span className="grid h-12 w-12 place-items-center rounded-xl border border-[#262626] bg-[#121212] text-[#4fc1ff] shadow-lg shadow-black/20">
               <FileCode2 size={22} />
             </span>
             <p className="mt-4 text-sm font-medium text-[#c9d1d9]">Ready for your next file</p>
             <p className="mt-1 max-w-xs text-xs leading-5 text-[#6e7681]">Select a file in Explorer or create a new one to start coding.</p>
-            <kbd className="mt-5 rounded border border-[#30363d] bg-[#161b22] px-2 py-1 font-mono text-[10px] text-[#8b949e]">⌘ P</kbd>
+            <kbd className="mt-5 rounded border border-[#262626] bg-[#121212] px-2 py-1 font-mono text-[10px] text-[#8b949e]">⌘ P</kbd>
           </div>
         )}
       </div>

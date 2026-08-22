@@ -104,16 +104,16 @@ export default function AIProviderSettings({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-2 border-b border-[#30363d] px-3 py-2.5">
+      <div className="flex items-center gap-2 border-b border-[#262626] px-3 py-2.5">
         <button
           type="button"
           title="Back"
           onClick={onBack}
-          className="grid h-6 w-6 shrink-0 place-items-center rounded text-[#8b949e] transition hover:bg-[#21262d] hover:text-white"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded text-[#8b949e] transition hover:bg-[#1a1a1a] hover:text-white"
         >
           <ChevronLeft size={15} />
         </button>
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-[#30363d] bg-[#161b22] text-[#a371f7]">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-[#262626] bg-[#121212] text-[#a371f7]">
           <Icon size={14} />
         </span>
         <div className="min-w-0">
@@ -174,7 +174,7 @@ export default function AIProviderSettings({
                   type="button"
                   title={showApiKey ? "Hide key" : "Show key"}
                   onClick={() => setShowApiKey((value) => !value)}
-                  className="absolute right-2 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded text-[#6e7681] transition hover:bg-[#30363d] hover:text-white"
+                  className="absolute right-2 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded text-[#6e7681] transition hover:bg-[#262626] hover:text-white"
                 >
                   {showApiKey ? <EyeOff size={13} /> : <Eye size={13} />}
                 </button>
@@ -230,11 +230,11 @@ export default function AIProviderSettings({
         )}
       </div>
 
-      <div className="flex items-center justify-end gap-2 border-t border-[#30363d] px-3 py-2.5">
+      <div className="flex items-center justify-end gap-2 border-t border-[#262626] px-3 py-2.5">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md px-3 py-1.5 text-xs font-medium text-[#c9d1d9] transition hover:bg-[#21262d]"
+          className="rounded-md px-3 py-1.5 text-xs font-medium text-[#c9d1d9] transition hover:bg-[#1a1a1a]"
         >
           Cancel
         </button>
@@ -242,7 +242,7 @@ export default function AIProviderSettings({
           type="button"
           disabled={!canConnect || connecting}
           onClick={handleConnect}
-          className="flex h-7 items-center gap-1.5 rounded-md bg-[#007acc] px-3 text-xs font-semibold text-white transition hover:bg-[#1685d1] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-7 items-center gap-1.5 rounded-md bg-white px-3 text-xs font-semibold text-black transition hover:bg-[#d4d4d4] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {connecting ? (
             <Loader2 size={13} className="animate-spin" />
@@ -257,7 +257,7 @@ export default function AIProviderSettings({
 }
 
 const inputClass =
-  "h-8 w-full rounded border border-[#30363d] bg-[#0d1117] px-2.5 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]";
+  "h-8 w-full rounded border border-[#262626] bg-[#000000] px-2.5 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#525252]";
 
 function Field({
   label,

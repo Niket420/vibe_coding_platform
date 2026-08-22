@@ -150,10 +150,10 @@ export default function GitHubRepositories({ onCloned }: GitHubRepositoriesProps
           return (
             <div
               key={repo.id}
-              className="flex items-center justify-between gap-3 rounded-md border border-[#30363d] bg-[#0d1117] p-3 transition hover:border-[#3d444d]"
+              className="flex items-center justify-between gap-3 rounded-md border border-[#262626] bg-[#000000] p-3 transition hover:border-[#333333]"
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#161b22] text-[#8b949e]">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#121212] text-[#8b949e]">
                   <FolderGit2 size={14} />
                 </span>
                 <div className="min-w-0">
@@ -166,7 +166,7 @@ export default function GitHubRepositories({ onCloned }: GitHubRepositoriesProps
                 type="button"
                 disabled={cloningId !== null}
                 onClick={() => handleClone(repo)}
-                className="flex h-7 shrink-0 items-center gap-1.5 rounded-md bg-[#007acc] px-3 text-[11px] font-semibold text-white transition hover:bg-[#1685d1] disabled:opacity-50"
+                className="flex h-7 shrink-0 items-center gap-1.5 rounded-md bg-white px-3 text-[11px] font-semibold text-black transition hover:bg-[#d4d4d4] disabled:opacity-50"
               >
                 {isCloning && <Loader2 size={12} className="animate-spin" />}
                 {isCloning ? "Cloning repository…" : "Clone"}

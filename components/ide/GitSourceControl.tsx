@@ -498,10 +498,10 @@ function handleClone() {
   const stagedFiles = status.filter(([, head, , stage]) => stage !== head);
 
   return (
-    <aside className="flex h-full min-w-0 flex-col bg-[#11161d] text-[#c9d1d9]">
+    <aside className="flex h-full min-w-0 flex-col bg-[#0a0a0a] text-[#c9d1d9]">
       {githubPickerOpen && (
   <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60">
-    <div className="w-[500px] max-h-[600px] overflow-auto rounded-lg border border-[#30363d] bg-[#161b22] p-4 shadow-2xl">
+    <div className="w-[500px] max-h-[600px] overflow-auto rounded-lg border border-[#262626] bg-[#121212] p-4 shadow-2xl">
       
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[#e6edf3]">
@@ -511,7 +511,7 @@ function handleClone() {
         <button
           type="button"
           onClick={() => setGithubPickerOpen(false)}
-          className="rounded px-2 py-1 text-[#8b949e] hover:bg-[#30363d] hover:text-white"
+          className="rounded px-2 py-1 text-[#8b949e] hover:bg-[#262626] hover:text-white"
         >
           ✕
         </button>
@@ -528,7 +528,7 @@ function handleClone() {
     </div>
   </div>
 )}
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-[#30363d] px-3">
+      <div className="flex h-10 shrink-0 items-center justify-between border-b border-[#262626] px-3">
         <span className="text-[11px] font-semibold tracking-[0.12em]">SOURCE CONTROL</span>
 
         <div className="flex items-center gap-0.5 text-[#8b949e]">
@@ -536,7 +536,7 @@ function handleClone() {
             type="button"
             title="Refresh"
             onClick={refreshGit}
-            className="grid h-6 w-6 place-items-center rounded hover:bg-[#30363d] hover:text-white"
+            className="grid h-6 w-6 place-items-center rounded hover:bg-[#262626] hover:text-white"
           >
             <RefreshCw size={14} />
           </button>
@@ -545,7 +545,7 @@ function handleClone() {
 
       {initialized === false ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-          <span className="grid h-10 w-10 place-items-center rounded-xl border border-[#30363d] bg-[#161b22] text-[#8b949e]">
+          <span className="grid h-10 w-10 place-items-center rounded-xl border border-[#262626] bg-[#121212] text-[#8b949e]">
             <GitBranch size={18} />
           </span>
           <div>
@@ -559,7 +559,7 @@ function handleClone() {
               type="button"
               disabled={initializing}
               onClick={handleInitGit}
-              className="flex h-8 items-center gap-2 rounded-md bg-[#007acc] px-3.5 text-xs font-semibold text-white transition hover:bg-[#1685d1] disabled:opacity-50"
+              className="flex h-8 items-center gap-2 rounded-md bg-white px-3.5 text-xs font-semibold text-black transition hover:bg-[#d4d4d4] disabled:opacity-50"
             >
               {initializing && <Loader2 size={13} className="animate-spin" />}
               Initialize Repository
@@ -568,7 +568,7 @@ function handleClone() {
               type="button"
               disabled={initializing}
               onClick={handleClone}
-              className="flex h-8 items-center gap-2 rounded-md border border-[#30363d] px-3.5 text-xs font-semibold text-[#c9d1d9] transition hover:bg-[#21262d] disabled:opacity-50"
+              className="flex h-8 items-center gap-2 rounded-md border border-[#262626] px-3.5 text-xs font-semibold text-[#c9d1d9] transition hover:bg-[#1a1a1a] disabled:opacity-50"
             >
               Clone Repository
             </button>
@@ -579,12 +579,12 @@ function handleClone() {
         <div className="grid flex-1 place-items-center text-[11px] text-[#6e7681]">Checking repository…</div>
       ) : (
         <>
-          <div className="relative flex items-center justify-between border-b border-[#30363d] px-2 py-1.5">
+          <div className="relative flex items-center justify-between border-b border-[#262626] px-2 py-1.5">
             <button
               type="button"
               title="Branches"
               onClick={() => setBranchMenuOpen((open) => !open)}
-              className="flex items-center gap-1.5 rounded px-1.5 py-1 text-xs transition hover:bg-[#21262d]"
+              className="flex items-center gap-1.5 rounded px-1.5 py-1 text-xs transition hover:bg-[#1a1a1a]"
             >
               <GitBranch size={13} className="text-[#8b949e]" />
               <span className="font-medium text-[#e6edf3]">{currentBranch || "detached"}</span>
@@ -597,7 +597,7 @@ function handleClone() {
                 onClick={handlePull}
                 disabled={loading}
                 title="Pull"
-                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#30363d] hover:text-white disabled:opacity-40"
+                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#262626] hover:text-white disabled:opacity-40"
               >
                 <ArrowDown size={13} />
               </button>
@@ -606,7 +606,7 @@ function handleClone() {
                 onClick={handlePush}
                 disabled={loading}
                 title="Push"
-                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#30363d] hover:text-white disabled:opacity-40"
+                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#262626] hover:text-white disabled:opacity-40"
               >
                 <ArrowUp size={13} />
               </button>
@@ -615,7 +615,7 @@ function handleClone() {
                 onClick={handleFetch}
                 disabled={loading}
                 title="Fetch"
-                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#30363d] hover:text-white disabled:opacity-40"
+                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#262626] hover:text-white disabled:opacity-40"
               >
                 <Upload size={13} />
               </button>
@@ -623,7 +623,7 @@ function handleClone() {
                 type="button"
                 onClick={() => setMoreMenuOpen((open) => !open)}
                 title="More actions"
-                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#30363d] hover:text-white"
+                className="grid h-6 w-6 place-items-center rounded transition hover:bg-[#262626] hover:text-white"
               >
                 <MoreHorizontal size={14} />
               </button>
@@ -632,7 +632,7 @@ function handleClone() {
             {branchMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setBranchMenuOpen(false)} />
-                <div className="absolute left-2 top-full z-50 mt-1 w-56 overflow-hidden rounded-md border border-[#30363d] bg-[#161b22] shadow-xl shadow-black/40">
+                <div className="cf-dropdown absolute left-2 top-full z-50 mt-1 w-56 overflow-hidden rounded-md border border-[#262626] bg-[#121212] shadow-xl shadow-black/40">
                   <div className="max-h-48 overflow-auto py-1">
                     {branches.length === 0 ? (
                       <div className="px-3 py-2 text-[11px] text-[#6e7681]">No branches yet</div>
@@ -647,12 +647,12 @@ function handleClone() {
                             disabled={loading || isCurrent}
                             onClick={() => handleCheckout(branch)}
                             title={isCurrent ? undefined : `Switch to ${branch}`}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition hover:bg-[#21262d] disabled:cursor-default"
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition hover:bg-[#1a1a1a] disabled:cursor-default"
                           >
                             <span className="grid w-3.5 shrink-0 place-items-center">
-                              {isCurrent && <Check size={12} className="text-[#58a6ff]" />}
+                              {isCurrent && <Check size={12} className="text-white" />}
                             </span>
-                            <span className={isCurrent ? "font-medium text-[#58a6ff]" : "text-[#c9d1d9]"}>
+                            <span className={isCurrent ? "font-medium text-white" : "text-[#c9d1d9]"}>
                               {branch}
                             </span>
                           </button>
@@ -661,7 +661,7 @@ function handleClone() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1.5 border-t border-[#30363d] p-2">
+                  <div className="flex items-center gap-1.5 border-t border-[#262626] p-2">
                     <input
                       value={newBranchName}
                       onChange={(event) => setNewBranchName(event.target.value)}
@@ -669,14 +669,14 @@ function handleClone() {
                         if (event.key === "Enter") handleCreateBranch();
                       }}
                       placeholder="New branch name"
-                      className="h-7 min-w-0 flex-1 rounded border border-[#30363d] bg-[#0d1117] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]"
+                      className="h-7 min-w-0 flex-1 rounded border border-[#262626] bg-[#000000] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#525252]"
                     />
                     <button
                       type="button"
                       title="Create branch"
                       disabled={creatingBranch || !newBranchName.trim()}
                       onClick={handleCreateBranch}
-                      className="grid h-7 w-7 shrink-0 place-items-center rounded bg-[#007acc] text-white transition hover:bg-[#1685d1] disabled:opacity-40"
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded bg-white text-black transition hover:bg-[#d4d4d4] disabled:opacity-40"
                     >
                       {creatingBranch ? <Loader2 size={13} className="animate-spin" /> : <Plus size={14} />}
                     </button>
@@ -688,7 +688,7 @@ function handleClone() {
             {moreMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={closeMoreMenu} />
-                <div className="absolute right-2 top-full z-50 mt-1 w-64 overflow-hidden rounded-md border border-[#30363d] bg-[#161b22] shadow-xl shadow-black/40">
+                <div className="cf-dropdown absolute right-2 top-full z-50 mt-1 w-64 overflow-hidden rounded-md border border-[#262626] bg-[#121212] shadow-xl shadow-black/40">
                   {moreView === "root" && (
                     <div className="py-1">
                       <button
@@ -698,7 +698,7 @@ function handleClone() {
     closeMoreMenu();
     handleConnectGithub();
   }}
-  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d] disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
+  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#1a1a1a] disabled:cursor-default disabled:opacity-70 disabled:hover:bg-transparent"
 >
   <GitFork size={13} />
   {githubConnected ? (
@@ -717,13 +717,13 @@ function handleClone() {
     closeMoreMenu();
     handleClone();
   }}
-  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d]"
+  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#1a1a1a]"
 >
   <GitBranch size={13} />
   Clone GitHub Repository
 </button>
 
-<div className="my-1 h-px bg-[#30363d]" />
+<div className="my-1 h-px bg-[#262626]" />
                       <button
                         type="button"
                         disabled={changedFiles.length === 0}
@@ -731,7 +731,7 @@ function handleClone() {
                           closeMoreMenu();
                           handleStageAll();
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d] disabled:opacity-40"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#1a1a1a] disabled:opacity-40"
                       >
                         <Plus size={13} />
                         Stage All Changes
@@ -743,18 +743,18 @@ function handleClone() {
                           closeMoreMenu();
                           handleUnstageAll();
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d] disabled:opacity-40"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#1a1a1a] disabled:opacity-40"
                       >
                         <Minus size={13} />
                         Unstage All Changes
                       </button>
 
-                      <div className="my-1 h-px bg-[#30363d]" />
+                      <div className="my-1 h-px bg-[#262626]" />
 
                       <button
                         type="button"
                         onClick={() => openMoreView("delete-branch")}
-                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d]"
+                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#1a1a1a]"
                       >
                         <span className="flex items-center gap-2">
                           <Trash2 size={13} />
@@ -765,7 +765,7 @@ function handleClone() {
                       <button
                         type="button"
                         onClick={() => openMoreView("remotes")}
-                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d]"
+                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#1a1a1a]"
                       >
                         <span className="flex items-center gap-2">
                           <GitBranch size={13} />
@@ -776,7 +776,7 @@ function handleClone() {
                       <button
                         type="button"
                         onClick={() => openMoreView("tags")}
-                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#21262d]"
+                        className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-[#c9d1d9] transition hover:bg-[#1a1a1a]"
                       >
                         <span className="flex items-center gap-2">
                           <Tag size={13} />
@@ -792,7 +792,7 @@ function handleClone() {
                       <button
                         type="button"
                         onClick={() => setMoreView("root")}
-                        className="flex w-full items-center gap-1.5 border-b border-[#30363d] px-3 py-2 text-left text-[11px] font-semibold text-[#c9d1d9] hover:bg-[#21262d]"
+                        className="flex w-full items-center gap-1.5 border-b border-[#262626] px-3 py-2 text-left text-[11px] font-semibold text-[#c9d1d9] hover:bg-[#1a1a1a]"
                       >
                         <ChevronLeft size={13} />
                         {moreView === "delete-branch" && "DELETE BRANCH"}
@@ -810,14 +810,14 @@ function handleClone() {
                               .map((branch) => (
                                 <div
                                   key={branch}
-                                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-[#21262d]"
+                                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-[#1a1a1a]"
                                 >
                                   <span className="min-w-0 flex-1 truncate text-xs text-[#c9d1d9]">{branch}</span>
                                   <button
                                     type="button"
                                     title={`Delete ${branch}`}
                                     onClick={() => handleDeleteBranch(branch)}
-                                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-[#f85149] opacity-0 hover:bg-[#30363d] group-hover:opacity-100"
+                                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-[#f85149] opacity-0 hover:bg-[#262626] group-hover:opacity-100"
                                   >
                                     <Trash2 size={13} />
                                   </button>
@@ -836,7 +836,7 @@ function handleClone() {
                               remotes.map((remote) => (
                                 <div
                                   key={remote.remote}
-                                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-[#21262d]"
+                                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-[#1a1a1a]"
                                 >
                                   <div className="min-w-0 flex-1">
                                     <p className="truncate text-xs text-[#e6edf3]">{remote.remote}</p>
@@ -846,7 +846,7 @@ function handleClone() {
                                     type="button"
                                     title={`Remove ${remote.remote}`}
                                     onClick={() => handleDeleteRemote(remote.remote)}
-                                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-[#f85149] opacity-0 hover:bg-[#30363d] group-hover:opacity-100"
+                                    className="grid h-5 w-5 shrink-0 place-items-center rounded text-[#f85149] opacity-0 hover:bg-[#262626] group-hover:opacity-100"
                                   >
                                     <Trash2 size={13} />
                                   </button>
@@ -854,12 +854,12 @@ function handleClone() {
                               ))
                             )}
                           </div>
-                          <div className="flex flex-col gap-1.5 border-t border-[#30363d] p-2">
+                          <div className="flex flex-col gap-1.5 border-t border-[#262626] p-2">
                             <input
                               value={newRemoteName}
                               onChange={(event) => setNewRemoteName(event.target.value)}
                               placeholder="Name (e.g. origin)"
-                              className="h-7 rounded border border-[#30363d] bg-[#0d1117] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]"
+                              className="h-7 rounded border border-[#262626] bg-[#000000] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#525252]"
                             />
                             <div className="flex items-center gap-1.5">
                               <input
@@ -869,14 +869,14 @@ function handleClone() {
                                   if (event.key === "Enter") handleAddRemote();
                                 }}
                                 placeholder="Repository URL"
-                                className="h-7 min-w-0 flex-1 rounded border border-[#30363d] bg-[#0d1117] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]"
+                                className="h-7 min-w-0 flex-1 rounded border border-[#262626] bg-[#000000] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#525252]"
                               />
                               <button
                                 type="button"
                                 title="Add remote"
                                 disabled={!newRemoteName.trim() || !newRemoteUrl.trim()}
                                 onClick={handleAddRemote}
-                                className="grid h-7 w-7 shrink-0 place-items-center rounded bg-[#007acc] text-white transition hover:bg-[#1685d1] disabled:opacity-40"
+                                className="grid h-7 w-7 shrink-0 place-items-center rounded bg-white text-black transition hover:bg-[#d4d4d4] disabled:opacity-40"
                               >
                                 <Plus size={14} />
                               </button>
@@ -899,7 +899,7 @@ function handleClone() {
                               ))
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 border-t border-[#30363d] p-2">
+                          <div className="flex items-center gap-1.5 border-t border-[#262626] p-2">
                             <input
                               value={newTagName}
                               onChange={(event) => setNewTagName(event.target.value)}
@@ -907,14 +907,14 @@ function handleClone() {
                                 if (event.key === "Enter") handleCreateTag();
                               }}
                               placeholder="New tag name"
-                              className="h-7 min-w-0 flex-1 rounded border border-[#30363d] bg-[#0d1117] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]"
+                              className="h-7 min-w-0 flex-1 rounded border border-[#262626] bg-[#000000] px-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#525252]"
                             />
                             <button
                               type="button"
                               title="Create tag"
                               disabled={!newTagName.trim()}
                               onClick={handleCreateTag}
-                              className="grid h-7 w-7 shrink-0 place-items-center rounded bg-[#007acc] text-white transition hover:bg-[#1685d1] disabled:opacity-40"
+                              className="grid h-7 w-7 shrink-0 place-items-center rounded bg-white text-black transition hover:bg-[#d4d4d4] disabled:opacity-40"
                             >
                               <Plus size={14} />
                             </button>
@@ -928,7 +928,7 @@ function handleClone() {
             )}
           </div>
 
-          <div className="border-b border-[#30363d] p-3">
+          <div className="border-b border-[#262626] p-3">
             <textarea
               value={commitMessage}
               onChange={(event) => setCommitMessage(event.target.value)}
@@ -939,7 +939,7 @@ function handleClone() {
                 }
               }}
               placeholder="Message (required)"
-              className="h-16 w-full resize-none rounded border border-[#30363d] bg-[#0d1117] p-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]"
+              className="h-16 w-full resize-none rounded border border-[#262626] bg-[#000000] p-2 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#525252]"
             />
             <div className="mt-1 text-right text-[10px] text-[#484f58]">⌘ Enter to commit</div>
 
@@ -948,7 +948,7 @@ function handleClone() {
               disabled={loading || stagedFiles.length === 0}
               onClick={handleCommit}
               title={stagedFiles.length === 0 ? "Stage changes before committing" : "Commit"}
-              className="flex h-7 w-full items-center justify-center gap-2 rounded bg-[#007acc] text-xs font-medium text-white transition hover:bg-[#1685d1] disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-7 w-full items-center justify-center gap-2 rounded bg-white text-xs font-medium text-black transition hover:bg-[#d4d4d4] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               Commit{stagedFiles.length > 0 ? ` (${stagedFiles.length})` : ""}
@@ -957,7 +957,7 @@ function handleClone() {
 
           {message && (
             <div
-              className={`flex items-center gap-2 border-b border-[#30363d] px-3 py-2 text-[11px] ${
+              className={`flex items-center gap-2 border-b border-[#262626] px-3 py-2 text-[11px] ${
                 tone === "error" ? "text-[#f85149]" : tone === "success" ? "text-[#3fb950]" : "text-[#8b949e]"
               }`}
             >
@@ -975,7 +975,7 @@ function handleClone() {
               <div className="flex h-8 items-center gap-1.5 px-3 text-[11px] font-semibold text-[#c9d1d9]">
                 <span>CHANGES</span>
                 {changedFiles.length > 0 && (
-                  <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[#30363d] px-1 text-[10px] font-medium text-[#c9d1d9]">
+                  <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[#262626] px-1 text-[10px] font-medium text-[#c9d1d9]">
                     {changedFiles.length}
                   </span>
                 )}
@@ -989,7 +989,7 @@ function handleClone() {
                   const { name, dir } = splitPath(path);
 
                   return (
-                    <div key={path} className="group flex h-7 items-center gap-2 px-3 hover:bg-[#21262d]">
+                    <div key={path} className="group flex h-7 items-center gap-2 px-3 hover:bg-[#1a1a1a]">
                       <span className="min-w-0 flex-1 truncate text-xs" title={path}>
                         <span className="text-[#e6edf3]">{name}</span>
                         {dir && <span className="ml-1.5 text-[#6e7681]">{dir}</span>}
@@ -1003,7 +1003,7 @@ function handleClone() {
                         type="button"
                         title="Stage changes"
                         onClick={() => handleStage(path)}
-                        className="grid h-5 w-5 shrink-0 place-items-center rounded opacity-0 hover:bg-[#30363d] group-hover:opacity-100"
+                        className="grid h-5 w-5 shrink-0 place-items-center rounded opacity-0 hover:bg-[#262626] group-hover:opacity-100"
                       >
                         <Plus size={14} />
                       </button>
@@ -1013,11 +1013,11 @@ function handleClone() {
               )}
             </section>
 
-            <section className="border-t border-[#30363d]">
+            <section className="border-t border-[#262626]">
               <div className="flex h-8 items-center gap-1.5 px-3 text-[11px] font-semibold text-[#c9d1d9]">
                 <span>STAGED CHANGES</span>
                 {stagedFiles.length > 0 && (
-                  <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[#30363d] px-1 text-[10px] font-medium text-[#c9d1d9]">
+                  <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[#262626] px-1 text-[10px] font-medium text-[#c9d1d9]">
                     {stagedFiles.length}
                   </span>
                 )}
@@ -1031,7 +1031,7 @@ function handleClone() {
                   const { name, dir } = splitPath(path);
 
                   return (
-                    <div key={path} className="group flex h-7 items-center gap-2 px-3 hover:bg-[#21262d]">
+                    <div key={path} className="group flex h-7 items-center gap-2 px-3 hover:bg-[#1a1a1a]">
                       <span className="min-w-0 flex-1 truncate text-xs" title={path}>
                         <span className="text-[#e6edf3]">{name}</span>
                         {dir && <span className="ml-1.5 text-[#6e7681]">{dir}</span>}
@@ -1045,7 +1045,7 @@ function handleClone() {
                         type="button"
                         title="Unstage changes"
                         onClick={() => handleUnstage(path)}
-                        className="grid h-5 w-5 shrink-0 place-items-center rounded opacity-0 hover:bg-[#30363d] group-hover:opacity-100"
+                        className="grid h-5 w-5 shrink-0 place-items-center rounded opacity-0 hover:bg-[#262626] group-hover:opacity-100"
                       >
                         <Minus size={14} />
                       </button>
@@ -1055,7 +1055,7 @@ function handleClone() {
               )}
             </section>
 
-            <section className="border-t border-[#30363d]">
+            <section className="border-t border-[#262626]">
               <div className="flex h-8 items-center gap-1.5 px-3 text-[11px] font-semibold text-[#c9d1d9]">
                 <History size={13} />
                 HISTORY
@@ -1069,17 +1069,17 @@ function handleClone() {
                   const changes = entry.commit.changes ?? [];
 
                   return (
-                    <div key={entry.oid} className="border-b border-[#1c2128] last:border-b-0">
+                    <div key={entry.oid} className="border-b border-[#1a1a1a] last:border-b-0">
                       <button
                         type="button"
                         onClick={() => setExpandedCommit(isExpanded ? null : entry.oid)}
-                        className="flex w-full items-start gap-2 px-3 py-1.5 text-left hover:bg-[#21262d]"
+                        className="flex w-full items-start gap-2 px-3 py-1.5 text-left hover:bg-[#1a1a1a]"
                       >
                         <GitCommit size={13} className="mt-0.5 shrink-0 text-[#8b949e]" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-xs text-[#e6edf3]">{entry.commit.message.split("\n")[0]}</p>
                           <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[#6e7681]">
-                            <span className="font-mono text-[#79c0ff]">{entry.oid.slice(0, 7)}</span>
+                            <span className="font-mono text-[#9ca3af]">{entry.oid.slice(0, 7)}</span>
                             <span>{entry.commit.author.name}</span>
                             <span>·</span>
                             <span>{relativeTime(entry.commit.author.timestamp)}</span>
@@ -1106,7 +1106,7 @@ function handleClone() {
                                   key={filepath as string}
                                   onClick={() => onOpenDiff?.(entry, filepath as string)}
                                   title="View diff"
-                                  className="flex w-full items-center gap-2 rounded py-0.5 text-left hover:bg-[#21262d]"
+                                  className="flex w-full items-center gap-2 rounded py-0.5 text-left hover:bg-[#1a1a1a]"
                                 >
                                   <span className="min-w-0 flex-1 truncate text-[11px]">
                                     <span className="text-[#c9d1d9]">{name}</span>

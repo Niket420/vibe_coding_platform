@@ -11,7 +11,7 @@ export default function AIMessage({ message }: { message: ChatMessage }) {
   if (message.role === "user") {
     return (
       <div className="px-3 py-2">
-        <div className="rounded-md border border-[#30363d] bg-[#161b22] p-2.5">
+        <div className="rounded-md border border-[#262626] bg-[#121212] p-2.5">
           <div className="mb-1 flex items-center gap-1.5 text-[10.5px] text-[#6e7681]">
             <User size={11} />
             <span className="font-medium text-[#8b949e]">You</span>
