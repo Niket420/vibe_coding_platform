@@ -9,6 +9,13 @@ type ChatMessage = {
   content: string;
 };
 
+// Providers whose API speaks the OpenAI chat-completions shape, and their
+// default base URL when the user hasn't set a custom endpoint.
+const OPENAI_COMPATIBLE_ENDPOINTS: Record<string, string> = {
+  xai: "https://api.x.ai/v1",
+  groq: "https://api.groq.com/openai/v1",
+};
+
 export async function POST(request: Request) {
   try {
     // 1. Identify the logged-in CodeForge user
@@ -72,17 +79,18 @@ export async function POST(request: Request) {
     // 5. Determine which model to use
     const selectedModel = model?.trim() || connection.model;
 
-    // 6. Currently we support Grok
-    if (provider !== "xai") {
+    // 6. Currently we support OpenAI-compatible providers (xAI, Groq)
+    const defaultEndpoint = OPENAI_COMPATIBLE_ENDPOINTS[provider];
+
+    if (!defaultEndpoint) {
       return NextResponse.json(
         { error: `Provider "${provider}" is not implemented yet.` },
         { status: 400 }
       );
     }
 
-    // 7. Call xAI
-    const endpoint =
-      connection.endpoint?.trim() || "https://api.x.ai/v1";
+    // 7. Call the provider's chat-completions endpoint
+    const endpoint = connection.endpoint?.trim() || defaultEndpoint;
 
     const response = await fetch(`${endpoint}/chat/completions`, {
       method: "POST",
@@ -96,11 +104,11 @@ export async function POST(request: Request) {
       }),
     });
 
-    // 8. Handle an error returned by xAI
+    // 8. Handle an error returned by the provider
     if (!response.ok) {
       const errorText = await response.text();
 
-      console.error("xAI API error:", response.status, errorText);
+      console.error(`${provider} API error:`, response.status, errorText);
 
       return NextResponse.json(
         {
@@ -111,7 +119,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 9. Parse xAI response
+    // 9. Parse the provider's response
     const data = await response.json();
 
     const assistantMessage = data?.choices?.[0]?.message?.content;

@@ -41,6 +41,15 @@ export const AI_PROVIDERS: AIProvider[] = [
     models: ["grok-4.6", "grok-4.5", "grok-build-0.1"],
   },
   {
+    id: "groq",
+    name: "Groq",
+    description: "Ultra-fast inference — not the same company as xAI's Grok",
+    icon: GroqIcon,
+    models: ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "groq/compound"],
+    supportsCustomEndpoint: true,
+    defaultEndpoint: "https://api.groq.com/openai/v1",
+  },
+  {
     id: "openai",
     name: "OpenAI",
     description: "GPT-5.1 and the OpenAI model family",
