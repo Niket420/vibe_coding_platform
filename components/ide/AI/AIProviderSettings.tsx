@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, Eye, EyeOff, KeyRound, Loader2, Plug } from "lucide-react";
+import {
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Plug,
+} from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import type { AIProvider } from "./types";
 
@@ -26,9 +33,11 @@ export default function AIProviderSettings({
   const [showApiKey, setShowApiKey] = useState(false);
   const [model, setModel] = useState(initialModel ?? provider.models[0] ?? "");
   const [customModel, setCustomModel] = useState(
-    provider.models.length === 0 ? initialModel ?? "" : "",
+    provider.models.length === 0 ? (initialModel ?? "") : "",
   );
-  const [endpoint, setEndpoint] = useState(initialEndpoint ?? provider.defaultEndpoint ?? "");
+  const [endpoint, setEndpoint] = useState(
+    initialEndpoint ?? provider.defaultEndpoint ?? "",
+  );
   const [connecting, setConnecting] = useState(false);
   const { push: pushToast } = useToast();
 
@@ -45,18 +54,52 @@ export default function AIProviderSettings({
 
     setConnecting(true);
 
-    // No backend wiring yet — this only transitions local UI state.
-    // The API key intentionally never leaves this component's state.
-    await new Promise((resolve) => setTimeout(resolve, 450));
+    try {
+      const response = await fetch("/api/ai/providers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider: provider.id,
+          model: resolvedModel,
+          apiKey: provider.isLocal ? undefined : apiKey,
+          endpoint: endpoint.trim() || undefined,
+        }),
+      });
 
-    setConnecting(false);
-    onConnect({ model: resolvedModel, endpoint: endpoint.trim() || undefined });
+      const data = await response.json();
 
-    pushToast({
-      tone: "success",
-      title: provider.isLocal ? "Local model configured" : "Provider configured",
-      description: `${provider.name} · ${resolvedModel}`,
-    });
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to save AI provider");
+      }
+
+      onConnect({
+        model: resolvedModel,
+        endpoint: endpoint.trim() || undefined,
+      });
+
+      pushToast({
+        tone: "success",
+        title: provider.isLocal
+          ? "Local model configured"
+          : "Provider configured",
+        description: `${provider.name} · ${resolvedModel}`,
+      });
+    } catch (error) {
+      console.error("AI provider connection error:", error);
+
+      pushToast({
+        tone: "error",
+        title: "Connection failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to configure AI provider.",
+      });
+    } finally {
+      setConnecting(false);
+    }
   }
 
   return (
@@ -74,8 +117,12 @@ export default function AIProviderSettings({
           <Icon size={14} />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-[12.5px] font-medium text-[#e6edf3]">{provider.name}</p>
-          <p className="truncate text-[10.5px] text-[#6e7681]">{provider.description}</p>
+          <p className="truncate text-[12.5px] font-medium text-[#e6edf3]">
+            {provider.name}
+          </p>
+          <p className="truncate text-[10.5px] text-[#6e7681]">
+            {provider.description}
+          </p>
         </div>
       </div>
 
@@ -108,7 +155,10 @@ export default function AIProviderSettings({
           <>
             <Field label="API key">
               <div className="relative">
-                <KeyRound size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6e7681]" />
+                <KeyRound
+                  size={13}
+                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6e7681]"
+                />
                 <input
                   value={apiKey}
                   onChange={(event) => setApiKey(event.target.value)}
@@ -130,7 +180,8 @@ export default function AIProviderSettings({
                 </button>
               </div>
               <p className="mt-1 text-[10px] leading-4 text-[#6e7681]">
-                Stored only in this session's memory. Nothing is sent or saved until the backend is wired up.
+                Stored only in this session's memory. Nothing is sent or saved
+                until the backend is wired up.
               </p>
             </Field>
 
@@ -166,7 +217,9 @@ export default function AIProviderSettings({
                 <input
                   value={endpoint}
                   onChange={(event) => setEndpoint(event.target.value)}
-                  placeholder={provider.defaultEndpoint ?? "https://api.example.com/v1"}
+                  placeholder={
+                    provider.defaultEndpoint ?? "https://api.example.com/v1"
+                  }
                   spellCheck={false}
                   autoComplete="off"
                   className={inputClass}
@@ -206,7 +259,13 @@ export default function AIProviderSettings({
 const inputClass =
   "h-8 w-full rounded border border-[#30363d] bg-[#0d1117] px-2.5 text-xs text-[#e6edf3] outline-none placeholder:text-[#6e7681] focus:border-[#007acc]";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
       <span className="mb-1 block text-[10.5px] font-medium uppercase tracking-wide text-[#8b949e]">

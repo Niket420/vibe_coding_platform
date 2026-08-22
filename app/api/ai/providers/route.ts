@@ -1,0 +1,129 @@
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { encrypt } from "@/lib/encryption";
+
+export async function POST(request: Request) {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "You must be signed in." },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+
+    const {
+      provider,
+      model,
+      apiKey,
+      endpoint,
+    } = body;
+
+    if (!provider || !model) {
+      return NextResponse.json(
+        { error: "Provider and model are required." },
+        { status: 400 }
+      );
+    }
+
+    // Local models don't necessarily require an API key.
+    if (provider !== "local" && !apiKey) {
+      return NextResponse.json(
+        { error: "API key is required." },
+        { status: 400 }
+      );
+    }
+
+    const encryptedApiKey = apiKey ? encrypt(apiKey) : "";
+
+    const connection = await prisma.aIProviderConnection.upsert({
+      where: {
+        clerkUserId_provider: {
+          clerkUserId: userId,
+          provider,
+        },
+      },
+      update: {
+        model,
+        encryptedApiKey,
+        endpoint: endpoint || null,
+      },
+      create: {
+        clerkUserId: userId,
+        provider,
+        model,
+        encryptedApiKey,
+        endpoint: endpoint || null,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      connection: {
+        id: connection.id,
+        provider: connection.provider,
+        model: connection.model,
+        endpoint: connection.endpoint,
+      },
+    });
+  } catch (error) {
+    console.error("AI provider save error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "You must be signed in." },
+        { status: 401 }
+      );
+    }
+
+    const providers = await prisma.aIProviderConnection.findMany({
+      where: {
+        clerkUserId: userId,
+      },
+      select: {
+        id: true,
+        provider: true,
+        model: true,
+        endpoint: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      providers,
+    });
+  } catch (error) {
+    console.error("AI provider fetch error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to load AI providers.",
+      },
+      { status: 500 }
+    );
+  }
+}
