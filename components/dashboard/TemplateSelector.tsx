@@ -31,14 +31,14 @@ export default function TemplateSelector({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
-      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-[#3b434b] bg-[#161b22] shadow-2xl shadow-black/60">
+      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-[#333333] bg-[#121212] shadow-2xl shadow-black/60">
 
         {/* Header */}
 
-        <div className="flex items-center justify-between border-b border-[#30363d] p-5 sm:p-6">
+        <div className="flex items-center justify-between border-b border-[#262626] p-5 sm:p-6">
 
           <div>
-            <p className="mb-1 text-[10px] font-semibold tracking-[0.15em] text-[#8bc7f3]">
+            <p className="mb-1 text-[10px] font-semibold tracking-[0.15em] text-[#8b949e]">
               NEW WORKSPACE
             </p>
             <h2 className="text-xl font-semibold text-white sm:text-2xl">
@@ -52,7 +52,7 @@ export default function TemplateSelector({
 
           <button
             onClick={onClose}
-            className="rounded-md p-2 text-[#8b949e] transition hover:bg-[#21262d] hover:text-white"
+            className="rounded-md p-2 text-[#8b949e] transition hover:bg-[#1a1a1a] hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
@@ -70,7 +70,7 @@ export default function TemplateSelector({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search frameworks..."
-              className="w-full rounded-md border border-[#3b434b] bg-[#0d1117] py-3 pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-[#6e7681] focus:border-[#007acc] focus:ring-2 focus:ring-[#007acc]/20"
+              className="w-full rounded-md border border-[#333333] bg-[#000000] py-3 pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-[#6e7681] focus:border-[#525252] focus:ring-2 focus:ring-white/10"
             />
 
           </div>
@@ -94,8 +94,8 @@ export default function TemplateSelector({
 
                   ${
                     selected === template.id
-                      ? "border-[#007acc] bg-[#102235] shadow-[0_0_0_1px_rgba(0,122,204,0.2)]"
-                      : "border-[#30363d] bg-[#11161d] hover:border-[#59636e] hover:bg-[#1c2128]"
+                      ? "border-white bg-[#141414] shadow-[0_0_0_1px_rgba(255,255,255,0.15)]"
+                      : "border-[#262626] bg-[#0a0a0a] hover:border-[#59636e] hover:bg-[#1a1a1a]"
                   }`}
                 >
 
@@ -136,8 +136,8 @@ export default function TemplateSelector({
 
                   ${
                     selected === template.id
-                      ? "border-[#007acc] bg-[#102235] shadow-[0_0_0_1px_rgba(0,122,204,0.2)]"
-                      : "border-[#30363d] bg-[#11161d] hover:border-[#59636e] hover:bg-[#1c2128]"
+                      ? "border-white bg-[#141414] shadow-[0_0_0_1px_rgba(255,255,255,0.15)]"
+                      : "border-[#262626] bg-[#0a0a0a] hover:border-[#59636e] hover:bg-[#1a1a1a]"
                   }`}
                 >
 
@@ -163,11 +163,11 @@ export default function TemplateSelector({
 
         {/* Footer */}
 
-        <div className="flex items-center justify-end gap-3 border-t border-[#30363d] p-5 sm:p-6">
+        <div className="flex items-center justify-end gap-3 border-t border-[#262626] p-5 sm:p-6">
 
           <button
             onClick={onClose}
-            className="rounded-md border border-[#3b434b] px-4 py-2 text-sm text-[#c9d1d9] transition hover:bg-[#21262d]"
+            className="rounded-md border border-[#333333] px-4 py-2 text-sm text-[#c9d1d9] transition hover:bg-[#1a1a1a]"
           >
             Cancel
           </button>
@@ -175,7 +175,7 @@ export default function TemplateSelector({
           <button
             disabled={!selected}
             onClick={() => onCreate(selected)}
-            className="rounded-md bg-[#007acc] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1685d1] disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#d4d4d4] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Create Project
           </button>

@@ -4,6 +4,7 @@ import {
   AnthropicIcon,
   GeminiIcon,
   GrokIcon,
+  GroqIcon,
   OllamaIcon,
   OpenAIIcon,
   OpenRouterIcon,
@@ -12,6 +13,7 @@ import {
 
 export type ProviderId =
   | "xai"
+  | "groq"
   | "openai"
   | "anthropic"
   | "google"
@@ -36,7 +38,7 @@ export const AI_PROVIDERS: AIProvider[] = [
     name: "Grok / xAI",
     description: "Grok 4 and the xAI model family",
     icon: GrokIcon,
-    models: ["grok-4.1", "grok-4-fast", "grok-3"],
+    models: ["grok-4.6", "grok-4.5", "grok-build-0.1"],
   },
   {
     id: "openai",
@@ -50,7 +52,7 @@ export const AI_PROVIDERS: AIProvider[] = [
     name: "Anthropic / Claude",
     description: "Claude Opus, Sonnet, and Haiku",
     icon: AnthropicIcon,
-    models: ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4.5"],
+    models: ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5-20251001"],
   },
   {
     id: "google",

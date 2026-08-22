@@ -63,7 +63,7 @@ export default function AIProviderSettings({
         body: JSON.stringify({
           provider: provider.id,
           model: resolvedModel,
-          apiKey: provider.isLocal ? undefined : apiKey,
+          apiKey: provider.isLocal ? undefined : apiKey.trim(),
           endpoint: endpoint.trim() || undefined,
         }),
       });

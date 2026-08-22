@@ -25,8 +25,28 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full bg-[#0b0d10] text-[#e6edf3]">
-        <ClerkProvider>
+      <body className="min-h-full bg-black text-[#e6edf3]">
+        <ClerkProvider
+          appearance={{
+            variables: {
+              colorPrimary: '#ffffff',
+              colorPrimaryForeground: '#000000',
+              colorBackground: '#0a0a0a',
+              colorForeground: '#e6edf3',
+              colorMutedForeground: '#8b949e',
+              colorNeutral: '#525252',
+              colorInput: '#000000',
+              colorInputForeground: '#e6edf3',
+              colorBorder: '#262626',
+              borderRadius: '0.5rem',
+            },
+            elements: {
+              card: 'border border-[#262626] shadow-2xl shadow-black/50',
+              formButtonPrimary:
+                'bg-white text-black hover:bg-[#d4d4d4] transition-colors shadow-none',
+            },
+          }}
+        >
           {children}
         </ClerkProvider>
       </body>

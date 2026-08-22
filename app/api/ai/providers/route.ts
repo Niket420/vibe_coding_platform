@@ -19,9 +19,14 @@ export async function POST(request: Request) {
     const {
       provider,
       model,
-      apiKey,
+      apiKey: rawApiKey,
       endpoint,
     } = body;
+
+    // Trim defensively — a copy-pasted key with a stray trailing space or
+    // newline would otherwise get encrypted as-is and silently fail auth
+    // against the provider later.
+    const apiKey = typeof rawApiKey === "string" ? rawApiKey.trim() : rawApiKey;
 
     if (!provider || !model) {
       return NextResponse.json(

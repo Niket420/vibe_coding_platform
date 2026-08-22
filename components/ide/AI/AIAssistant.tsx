@@ -138,32 +138,74 @@ export default function AIAssistant({ activeFilePath }: AIAssistantProps) {
     setPickerOpen(false);
   }
 
-  function handleSend() {
-    const text = draft.trim();
-    if (!text || isGenerating || !config) return;
+  async function handleSend() {
+      const text = draft.trim();
 
-    setMessages((previous) => [
-      ...previous,
-      { id: nextMessageId(), role: "user", content: text, createdAt: Date.now() },
-    ]);
-    setDraft("");
-    setIsGenerating(true);
+      if (!text || isGenerating || !config) return;
 
-    replyTimeout.current = setTimeout(() => {
-      setMessages((previous) => [
-        ...previous,
-        {
-          id: nextMessageId(),
-          role: "assistant",
-          content:
-            "This is a placeholder response — CodeForge AI isn't wired up to a real model yet. The chat, provider switching, and context controls are ready for the backend to plug into.",
-          createdAt: Date.now(),
-        },
-      ]);
-      setIsGenerating(false);
-      replyTimeout.current = null;
-    }, 900);
-  }
+      const userMessage: ChatMessage = {
+        id: nextMessageId(),
+        role: "user",
+        content: text,
+        createdAt: Date.now(),
+      };
+
+      const updatedMessages = [...messages, userMessage];
+
+      setMessages(updatedMessages);
+      setDraft("");
+      setIsGenerating(true);
+
+      try {
+        const response = await fetch("/api/ai/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            provider: config.providerId,
+            model: config.model,
+            messages: updatedMessages.map((message) => ({
+              role: message.role,
+              content: message.content,
+            })),
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "AI request failed.");
+        }
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            id: nextMessageId(),
+            role: "assistant",
+            content: data.message,
+            createdAt: Date.now(),
+          },
+        ]);
+      } catch (error) {
+        console.error("AI request error:", error);
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            id: nextMessageId(),
+            role: "assistant",
+            content:
+              error instanceof Error
+                ? `Error: ${error.message}`
+                : "Sorry, the AI request failed.",
+            createdAt: Date.now(),
+          },
+        ]);
+      } finally {
+        setIsGenerating(false);
+      }
+}
 
   function handleStop() {
     if (replyTimeout.current) {
@@ -257,7 +299,7 @@ export default function AIAssistant({ activeFilePath }: AIAssistantProps) {
         />
       ) : pickerOpen ? (
         <AIProviderSelector
-          providers={unconfiguredProviders}
+          providers={config ? unconfiguredProviders : AI_PROVIDERS}
           heading={config ? "Add another provider" : "Choose an AI provider"}
           subheading={
             config

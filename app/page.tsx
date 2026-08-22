@@ -19,12 +19,12 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#0b0d10] text-[#e6edf3]">
+    <main className="min-h-screen overflow-hidden bg-[#000000] text-[#e6edf3]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[560px] bg-[radial-gradient(circle_at_50%_-15%,rgba(0,122,204,0.26),transparent_58%)]" />
 
       <nav className="relative z-10 mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
         <Link href="/" className="group flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#007acc] shadow-[0_0_28px_rgba(0,122,204,0.38)] transition group-hover:scale-105">
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-white text-black shadow-[0_0_28px_rgba(255,255,255,0.18)] transition group-hover:scale-105">
             <Code2 size={20} strokeWidth={2.3} />
           </span>
           <span className="text-base font-semibold tracking-tight text-white">
@@ -40,7 +40,7 @@ export default function HomePage() {
               </button>
             </SignInButton>
             <SignUpButton>
-              <button className="inline-flex items-center gap-2 rounded-md bg-[#007acc] px-3.5 py-2 text-sm font-semibold text-white shadow-lg shadow-[#007acc]/20 transition hover:bg-[#1685d1] sm:px-4">
+              <button className="inline-flex items-center gap-2 rounded-md bg-white px-3.5 py-2 text-sm font-semibold text-black shadow-lg shadow-black/30 transition hover:bg-[#d4d4d4] sm:px-4">
                 Start coding
                 <ArrowRight size={15} />
               </button>
@@ -60,40 +60,55 @@ export default function HomePage() {
 
       <section className="relative z-10 mx-auto grid max-w-7xl items-center gap-14 px-5 pb-18 pt-16 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:pb-28 lg:pt-24">
         <div className="max-w-2xl">
-          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#2a3947] bg-[#121820]/85 px-3 py-1.5 text-xs font-medium text-[#8bc7f3] shadow-sm">
-            <Sparkles size={14} className="text-[#4fc1ff]" />
+          <div
+            className="cf-fade-up mb-7 inline-flex items-center gap-2 rounded-full border border-[#262626] bg-[#0a0a0a]/85 px-3 py-1.5 text-xs font-medium text-[#c9d1d9] shadow-sm"
+            style={{ animationDelay: "0ms" }}
+          >
+            <Sparkles size={14} className="text-white" />
             Your focused browser workspace
           </div>
 
-          <h1 className="text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-white sm:text-6xl lg:text-[4.25rem]">
+          <h1
+            className="cf-fade-up text-balance text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-white sm:text-6xl lg:text-[4.25rem]"
+            style={{ animationDelay: "80ms" }}
+          >
             Make an idea real
-            <span className="block bg-gradient-to-r from-[#4fc1ff] via-[#7db8ff] to-[#b998ff] bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-white via-[#d4d4d4] to-[#8b949e] bg-clip-text text-transparent">
               without leaving flow.
             </span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-pretty text-base leading-7 text-[#9da9b5] sm:text-lg">
+          <p
+            className="cf-fade-up mt-6 max-w-xl text-pretty text-base leading-7 text-[#9da9b5] sm:text-lg"
+            style={{ animationDelay: "160ms" }}
+          >
             CodeForge pairs a familiar VS Code-inspired workspace with an in-browser terminal and a fast, distraction-free editor.
           </p>
 
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <div
+            className="cf-fade-up mt-9 flex flex-col gap-3 sm:flex-row"
+            style={{ animationDelay: "240ms" }}
+          >
             <Link
               href="/dashboard"
-              className="group inline-flex items-center justify-center gap-2 rounded-md bg-[#007acc] px-5 py-3 text-sm font-semibold text-white shadow-xl shadow-[#007acc]/20 transition hover:bg-[#1685d1]"
+              className="group inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-semibold text-black shadow-xl shadow-black/30 transition hover:bg-[#d4d4d4]"
             >
               Open your workspace
               <ArrowRight size={16} className="transition group-hover:translate-x-0.5" />
             </Link>
             <a
               href="#workspace"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-[#30363d] bg-[#161b22]/80 px-5 py-3 text-sm font-medium text-[#c9d1d9] transition hover:border-[#4b5563] hover:bg-[#1c2128] hover:text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-[#262626] bg-[#121212]/80 px-5 py-3 text-sm font-medium text-[#c9d1d9] transition hover:border-[#4b5563] hover:bg-[#1a1a1a] hover:text-white"
             >
               <Play size={15} fill="currentColor" />
               Explore the workspace
             </a>
           </div>
 
-          <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-[#8b949e]">
+          <div
+            className="cf-fade-up mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-[#8b949e]"
+            style={{ animationDelay: "320ms" }}
+          >
             {[
               "Browser-native terminal",
               "Monaco-powered editing",
@@ -107,33 +122,37 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div id="workspace" className="relative mx-auto w-full max-w-2xl lg:max-w-none">
-          <div className="absolute -inset-6 rounded-[2rem] bg-[#007acc]/10 blur-3xl" />
-          <div className="relative overflow-hidden rounded-xl border border-[#30363d] bg-[#11161d] shadow-2xl shadow-black/45 ring-1 ring-white/5">
-            <div className="flex h-10 items-center border-b border-[#2b3139] bg-[#171c23] px-3">
+        <div
+          id="workspace"
+          className="cf-fade-up relative mx-auto w-full max-w-2xl lg:max-w-none"
+          style={{ animationDelay: "160ms" }}
+        >
+          <div className="absolute -inset-6 rounded-[2rem] bg-white/5 blur-3xl" />
+          <div className="relative overflow-hidden rounded-xl border border-[#262626] bg-[#0a0a0a] shadow-2xl shadow-black/45 ring-1 ring-white/5">
+            <div className="flex h-10 items-center border-b border-[#262626] bg-[#121212] px-3">
               <div className="flex gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#f14c4c]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#cca700]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#3fb950]" />
               </div>
-              <div className="mx-auto rounded-md border border-[#30363d] bg-[#0d1117] px-4 py-1 font-mono text-[10px] text-[#8b949e]">
+              <div className="mx-auto rounded-md border border-[#262626] bg-[#000000] px-4 py-1 font-mono text-[10px] text-[#8b949e]">
                 portfolio.tsx — CodeForge
               </div>
               <Command size={14} className="text-[#8b949e]" />
             </div>
 
             <div className="grid min-h-[360px] grid-cols-[44px_140px_minmax(0,1fr)] sm:min-h-[420px] sm:grid-cols-[48px_170px_minmax(0,1fr)]">
-              <aside className="flex flex-col items-center gap-5 border-r border-[#2b3139] bg-[#151a21] py-4 text-[#7f8791]">
+              <aside className="flex flex-col items-center gap-5 border-r border-[#262626] bg-[#0a0a0a] py-4 text-[#7f8791]">
                 <Files size={20} className="text-white" />
                 <span className="relative">
                   <Braces size={19} />
-                  <span className="absolute -left-3 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-full bg-[#007acc]" />
+                  <span className="absolute -left-3 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-full bg-white" />
                 </span>
                 <TerminalSquare size={19} />
                 <Sparkles size={19} />
               </aside>
 
-              <aside className="border-r border-[#2b3139] bg-[#11161d] py-4 font-mono text-[10px] sm:text-xs">
+              <aside className="border-r border-[#262626] bg-[#0a0a0a] py-4 font-mono text-[10px] sm:text-xs">
                 <div className="mb-4 flex items-center justify-between px-3 text-[10px] font-semibold tracking-[0.13em] text-[#aeb8c2]">
                   EXPLORER
                   <span className="text-base font-normal text-[#7f8791]">···</span>
@@ -141,7 +160,7 @@ export default function HomePage() {
                 <div className="px-3 text-[#c9d1d9]">⌄ &nbsp; MY-PORTFOLIO</div>
                 <div className="mt-2 space-y-1 text-[#8b949e]">
                   <div className="px-5">⌄ &nbsp; app</div>
-                  <div className="bg-[#1f2934] px-7 py-1 text-[#e6edf3]">⌘ &nbsp; page.tsx</div>
+                  <div className="bg-[#1a1a1a] px-7 py-1 text-[#e6edf3]">⌘ &nbsp; page.tsx</div>
                   <div className="px-7"># &nbsp; globals.css</div>
                   <div className="px-5">⌄ &nbsp; components</div>
                   <div className="px-7">⌘ &nbsp; hero.tsx</div>
@@ -149,10 +168,10 @@ export default function HomePage() {
                 </div>
               </aside>
 
-              <div className="min-w-0 bg-[#0d1117] font-mono text-[10px] leading-6 sm:text-xs sm:leading-7">
-                <div className="flex h-9 items-end border-b border-[#2b3139] bg-[#11161d] text-[#c9d1d9]">
-                  <span className="flex h-full items-center gap-2 border-t-2 border-[#007acc] bg-[#0d1117] px-3">
-                    <span className="text-[#61dafb]">⌘</span>
+              <div className="min-w-0 bg-[#000000] font-mono text-[10px] leading-6 sm:text-xs sm:leading-7">
+                <div className="flex h-9 items-end border-b border-[#262626] bg-[#0a0a0a] text-[#c9d1d9]">
+                  <span className="flex h-full items-center gap-2 border-t-2 border-white bg-[#000000] px-3">
+                    <span className="text-[#8b949e]">⌘</span>
                     page.tsx
                     <span className="hidden text-[#6e7681] sm:inline">×</span>
                   </span>
@@ -169,7 +188,7 @@ export default function HomePage() {
                     <div>&nbsp;&nbsp;)</div>
                   </div>
                 </div>
-                <div className="mt-auto flex items-center justify-between border-t border-[#2b3139] bg-[#11161d] px-3 py-1.5 text-[9px] text-[#8b949e] sm:text-[10px]">
+                <div className="mt-auto flex items-center justify-between border-t border-[#262626] bg-[#0a0a0a] px-3 py-1.5 text-[9px] text-[#8b949e] sm:text-[10px]">
                   <span>main*</span>
                   <span>TypeScript React &nbsp; • &nbsp; UTF-8 &nbsp; • &nbsp; Ln 1, Col 1</span>
                 </div>
