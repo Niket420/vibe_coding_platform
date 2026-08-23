@@ -137,7 +137,9 @@ export default function PlaygroundPage() {
   }
 
   async function openDiff(entry: GitLogEntry, filepath: string) {
-    const change = entry.commit.changes?.find(([, , changedPath]) => changedPath === filepath);
+    const change = entry.commit.changes?.find(
+      ([, , changedPath]) => changedPath === filepath,
+    );
     if (!change) return;
 
     const [newOid, oldOid] = change as [string | null, string | null, string];
@@ -148,7 +150,10 @@ export default function PlaygroundPage() {
       return;
     }
 
-    const [original, modified] = await Promise.all([readBlobText(oldOid), readBlobText(newOid)]);
+    const [original, modified] = await Promise.all([
+      readBlobText(oldOid),
+      readBlobText(newOid),
+    ]);
 
     setDiffTabs((previousDiffs) => [
       ...previousDiffs,
@@ -213,192 +218,228 @@ export default function PlaygroundPage() {
   }
   return (
     <ToastProvider>
-    <main className="flex h-screen flex-col overflow-hidden bg-[#000000] font-sans text-[#e6edf3]">
-      <header className="h-11 shrink-0 border-b border-[#262626]">
-        <IDEHeader
-          fileTree={fileTree}
-          activityItems={activityItems}
-          onSelectActivity={handleSelectActivity}
-          onOpenFile={openFile}
-          aiOpen={activeActivity === "assistant" && sidebarOpen}
-          onToggleAI={() => handleSelectActivity("assistant")}
-          terminalOpen={terminalOpen}
-          onToggleTerminal={() => setTerminalOpen((open) => !open)}
-          previewOpen={previewOpen}
-          onTogglePreview={() => setPreviewOpen((open) => !open)}
-        />
-      </header>
+      <main className="flex h-screen flex-col overflow-hidden bg-[#000000] font-sans text-[#e6edf3]">
+        <header className="h-11 shrink-0 border-b border-[#262626]">
+          <IDEHeader
+            fileTree={fileTree}
+            activityItems={activityItems}
+            onSelectActivity={handleSelectActivity}
+            onOpenFile={openFile}
+            aiOpen={activeActivity === "assistant" && sidebarOpen}
+            onToggleAI={() => handleSelectActivity("assistant")}
+            terminalOpen={terminalOpen}
+            onToggleTerminal={() => setTerminalOpen((open) => !open)}
+            previewOpen={previewOpen}
+            onTogglePreview={() => setPreviewOpen((open) => !open)}
+          />
+        </header>
 
-      <div className="flex min-h-0 flex-1">
-        <aside className="z-10 flex w-12 shrink-0 flex-col items-center border-r border-[#262626] bg-[#0a0a0a] py-3">
-          <div className="mb-4 grid h-8 w-8 place-items-center rounded-md bg-white text-black shadow-lg shadow-black/40">
-            <Code2 size={18} />
-          </div>
+        <div className="flex min-h-0 flex-1">
+          <aside className="z-10 flex w-12 shrink-0 flex-col items-center border-r border-[#262626] bg-[#0a0a0a] py-3">
+            <div className="mb-4 grid h-8 w-8 place-items-center rounded-md bg-white text-black shadow-lg shadow-black/40">
+              <Code2 size={18} />
+            </div>
 
-          <nav className="flex flex-1 flex-col items-center gap-1">
-            {activityItems.map(({ id, label, icon: Icon }) => {
-              const isActive = activeActivity === id && sidebarOpen;
+            <nav className="flex flex-1 flex-col items-center gap-1">
+              {activityItems.map(({ id, label, icon: Icon }) => {
+                const isActive = activeActivity === id && sidebarOpen;
 
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  title={label}
-                  aria-label={label}
-                  aria-pressed={isActive}
-                  onClick={() => handleSelectActivity(id)}
-                  className={`relative grid h-10 w-10 place-items-center rounded-md transition-colors duration-150 ${
-                    isActive
-                      ? "bg-[#1a1a1a] text-white"
-                      : "text-[#7d8590] hover:bg-[#1a1a1a] hover:text-[#c9d1d9]"
-                  }`}
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={isActive}
+                    onClick={() => handleSelectActivity(id)}
+                    className={`relative grid h-10 w-10 place-items-center rounded-md transition-colors duration-150 ${
+                      isActive
+                        ? "bg-[#1a1a1a] text-white"
+                        : "text-[#7d8590] hover:bg-[#1a1a1a] hover:text-[#c9d1d9]"
+                    }`}
+                  >
+                    {isActive && (
+                      <span className="absolute left-0 h-6 w-0.5 rounded-r-full bg-white" />
+                    )}
+                    <Icon size={20} strokeWidth={1.8} />
+                  </button>
+                );
+              })}
+            </nav>
+
+            <button
+              type="button"
+              title="Manage"
+              aria-label="Manage"
+              className="grid h-10 w-10 place-items-center rounded-md text-[#7d8590] transition hover:bg-[#1a1a1a] hover:text-[#c9d1d9]"
+            >
+              <Settings2 size={19} strokeWidth={1.8} />
+            </button>
+          </aside>
+
+          <Group className="min-h-0 flex-1">
+            {sidebarOpen && (
+              <>
+                <Panel
+                  id="sidebar"
+                  defaultSize={340}
+                  minSize={260}
+                  maxSize={480}
                 >
-                  {isActive && (
-                    <span className="absolute left-0 h-6 w-0.5 rounded-r-full bg-white" />
-                  )}
-                  <Icon size={20} strokeWidth={1.8} />
-                </button>
-              );
-            })}
-          </nav>
-
-          <button
-            type="button"
-            title="Manage"
-            aria-label="Manage"
-            className="grid h-10 w-10 place-items-center rounded-md text-[#7d8590] transition hover:bg-[#1a1a1a] hover:text-[#c9d1d9]"
-          >
-            <Settings2 size={19} strokeWidth={1.8} />
-          </button>
-        </aside>
-
-        <Group className="min-h-0 flex-1">
-          {sidebarOpen && (
-            <>
-              <Panel id="sidebar" defaultSize={340} minSize={260} maxSize={480}>
-                <div key={activeActivity} className="cf-sidebar-in h-full">
-                  {activeActivity === "source-control" ? (
-                    <GitSourceControl
-                      onRefreshExplorer={async () => {
-                        await refreshFileTree(webcontainer);
-                      }}
-                      onOpenDiff={openDiff}
-                    />
-                  ) : activeActivity === "assistant" ? (
-                    <AIAssistant activeFilePath={activeFilePath} />
-                  ) : (
-                    <FileExplorer
-                      fileTree={fileTree}
-                      activeFilePath={activeFilePath}
-                      onRefresh={() => refreshFileTree(webcontainer)}
-                      onCreateFolder={createFolder}
-                      onCreateFile={createFile}
-                      onOpenFile={openFile}
-                      onDeletePath={deletePath}
-                      onRenamePath={renamePath}
-                      selectedPath={selectedPath}
-                      setSelectedPath={setSelectedPath}
-                      selectedType={selectedType}
-                      setSelectedType={setSelectedType}
-                    />
-                  )}
-                </div>
-              </Panel>
-
-              <Separator className="w-px bg-[#262626] transition-colors hover:bg-[#404040]" />
-            </>
-          )}
-
-          <Panel id="editor-column" minSize="30%">
-            <Group orientation="vertical" className="h-full">
-              <Panel id="editor">
-                <Editor
-                  webcontainer={webcontainer}
-                  openedFiles={openedFiles}
-                  setOpenedFiles={setOpenedFiles}
-                  activeFilePath={activeFilePath}
-                  setActiveFilePath={setActiveFilePath}
-                  diffTabs={diffTabs}
-                  setDiffTabs={setDiffTabs}
-                  activeDiffId={activeDiffId}
-                  setActiveDiffId={setActiveDiffId}
-                />
-              </Panel>
-
-              {terminalOpen && (
-                <>
-                  <Separator className="h-px bg-[#262626] transition-colors hover:bg-[#404040]" />
-
-                  <Panel id="terminal" defaultSize="30%" minSize="15%" maxSize="75%">
-                    <section className="cf-panel-bottom flex h-full flex-col bg-[#0a0a0a]">
-                      <div className="flex h-8 shrink-0 items-center justify-between border-b border-[#262626] bg-[#121212] px-2.5">
-                        <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[#c9d1d9]">
-                          <TerminalSquare size={13} className="text-[#8b949e]" />
-                          TERMINAL
-                        </span>
-                        <button
-                          type="button"
-                          title="Close Terminal"
-                          aria-label="Close terminal"
-                          onClick={() => setTerminalOpen(false)}
-                          className="grid h-5 w-5 place-items-center rounded text-[#8b949e] transition hover:bg-[#262626] hover:text-white"
-                        >
-                          <X size={13} />
-                        </button>
-                      </div>
-
-                      <div className="min-h-0 flex-1 overflow-hidden">
-                        <IDETerminal
-                          onFilesystemChange={() => refreshFileTree(webcontainer)}
-                        />
-                      </div>
-                    </section>
-                  </Panel>
-                </>
-              )}
-            </Group>
-          </Panel>
-
-          {previewOpen && (
-            <>
-              <Separator className="w-px bg-[#262626] transition-colors hover:bg-[#404040]" />
-
-              <Panel id="preview" defaultSize="40%" minSize="25%" maxSize="55%">
-                <section className="cf-panel-right flex h-full flex-col border-l border-[#262626] bg-[#0a0a0a]">
-                  <div className="flex h-8 shrink-0 items-center justify-between border-b border-[#262626] bg-[#121212] px-2.5">
-                    <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[#c9d1d9]">
-                      <Globe2 size={13} className="text-[#8b949e]" />
-                      PREVIEW
-                    </span>
-                    <button
-                      type="button"
-                      title="Close Preview"
-                      aria-label="Close preview"
-                      onClick={() => setPreviewOpen(false)}
-                      className="grid h-5 w-5 place-items-center rounded text-[#8b949e] transition hover:bg-[#262626] hover:text-white"
+                  <div className="relative h-full">
+                    <div
+                      className={`absolute inset-0 ${
+                        activeActivity === "source-control" ? "block" : "hidden"
+                      }`}
                     >
-                      <X size={13} />
-                    </button>
-                  </div>
+                      <GitSourceControl
+                        onRefreshExplorer={async () => {
+                          await refreshFileTree(webcontainer);
+                        }}
+                        onOpenDiff={openDiff}
+                      />
+                    </div>
 
-                  <div className="min-h-0 flex-1 overflow-hidden">
-                    <Preview previewUrl={previewUrl} />
-                  </div>
-                </section>
-              </Panel>
-            </>
-          )}
-        </Group>
-      </div>
+                    <div
+                      className={`absolute inset-0 ${
+                        activeActivity === "assistant" ? "block" : "hidden"
+                      }`}
+                    >
+                      <AIAssistant activeFilePath={activeFilePath} />
+                    </div>
 
-      <footer className="flex h-6 shrink-0 items-center justify-between bg-[#f5f5f5] px-3 text-[10px] font-medium text-black">
-        <span className="flex items-center gap-1.5">
-          <GitBranch size={12} /> main
-        </span>
-        <span className="hidden sm:inline">No problems detected</span>
-        <span>Spaces: 2 &nbsp; UTF-8</span>
-      </footer>
-    </main>
+                    <div
+                      className={`absolute inset-0 ${
+                        activeActivity === "explorer" ? "block" : "hidden"
+                      }`}
+                    >
+                      <FileExplorer
+                        fileTree={fileTree}
+                        activeFilePath={activeFilePath}
+                        onRefresh={() => refreshFileTree(webcontainer)}
+                        onCreateFolder={createFolder}
+                        onCreateFile={createFile}
+                        onOpenFile={openFile}
+                        onDeletePath={deletePath}
+                        onRenamePath={renamePath}
+                        selectedPath={selectedPath}
+                        setSelectedPath={setSelectedPath}
+                        selectedType={selectedType}
+                        setSelectedType={setSelectedType}
+                      />
+                    </div>
+                  </div>
+                </Panel>
+
+                <Separator className="w-px bg-[#262626] transition-colors hover:bg-[#404040]" />
+              </>
+            )}
+
+            <Panel id="editor-column" minSize="30%">
+              <Group orientation="vertical" className="h-full">
+                <Panel id="editor">
+                  <Editor
+                    webcontainer={webcontainer}
+                    openedFiles={openedFiles}
+                    setOpenedFiles={setOpenedFiles}
+                    activeFilePath={activeFilePath}
+                    setActiveFilePath={setActiveFilePath}
+                    diffTabs={diffTabs}
+                    setDiffTabs={setDiffTabs}
+                    activeDiffId={activeDiffId}
+                    setActiveDiffId={setActiveDiffId}
+                  />
+                </Panel>
+
+                {terminalOpen && (
+                  <>
+                    <Separator className="h-px bg-[#262626] transition-colors hover:bg-[#404040]" />
+
+                    <Panel
+                      id="terminal"
+                      defaultSize="30%"
+                      minSize="15%"
+                      maxSize="75%"
+                    >
+                      <section className="cf-panel-bottom flex h-full flex-col bg-[#0a0a0a]">
+                        <div className="flex h-8 shrink-0 items-center justify-between border-b border-[#262626] bg-[#121212] px-2.5">
+                          <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[#c9d1d9]">
+                            <TerminalSquare
+                              size={13}
+                              className="text-[#8b949e]"
+                            />
+                            TERMINAL
+                          </span>
+                          <button
+                            type="button"
+                            title="Close Terminal"
+                            aria-label="Close terminal"
+                            onClick={() => setTerminalOpen(false)}
+                            className="grid h-5 w-5 place-items-center rounded text-[#8b949e] transition hover:bg-[#262626] hover:text-white"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+
+                        <div className="min-h-0 flex-1 overflow-hidden">
+                          <IDETerminal
+                            onFilesystemChange={() =>
+                              refreshFileTree(webcontainer)
+                            }
+                          />
+                        </div>
+                      </section>
+                    </Panel>
+                  </>
+                )}
+              </Group>
+            </Panel>
+
+            {previewOpen && (
+              <>
+                <Separator className="w-px bg-[#262626] transition-colors hover:bg-[#404040]" />
+
+                <Panel
+                  id="preview"
+                  defaultSize="40%"
+                  minSize="25%"
+                  maxSize="55%"
+                >
+                  <section className="cf-panel-right flex h-full flex-col border-l border-[#262626] bg-[#0a0a0a]">
+                    <div className="flex h-8 shrink-0 items-center justify-between border-b border-[#262626] bg-[#121212] px-2.5">
+                      <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-[#c9d1d9]">
+                        <Globe2 size={13} className="text-[#8b949e]" />
+                        PREVIEW
+                      </span>
+                      <button
+                        type="button"
+                        title="Close Preview"
+                        aria-label="Close preview"
+                        onClick={() => setPreviewOpen(false)}
+                        className="grid h-5 w-5 place-items-center rounded text-[#8b949e] transition hover:bg-[#262626] hover:text-white"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+
+                    <div className="min-h-0 flex-1 overflow-hidden">
+                      <Preview previewUrl={previewUrl} />
+                    </div>
+                  </section>
+                </Panel>
+              </>
+            )}
+          </Group>
+        </div>
+
+        <footer className="flex h-6 shrink-0 items-center justify-between bg-[#f5f5f5] px-3 text-[10px] font-medium text-black">
+          <span className="flex items-center gap-1.5">
+            <GitBranch size={12} /> main
+          </span>
+          <span className="hidden sm:inline">No problems detected</span>
+          <span>Spaces: 2 &nbsp; UTF-8</span>
+        </footer>
+      </main>
     </ToastProvider>
   );
 }
