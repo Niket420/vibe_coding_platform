@@ -9,8 +9,8 @@ type ChatMessage = {
   content: string;
 };
 
-// Providers whose API speaks the OpenAI chat-completions shape, and their
-// default base URL when the user hasn't set a custom endpoint.
+// Providers whose API speaks the OpenAI chat-completions shape,
+// and their default base URL when the user hasn't set a custom endpoint.
 const OPENAI_COMPATIBLE_ENDPOINTS: Record<string, string> = {
   xai: "https://api.x.ai/v1",
   groq: "https://api.groq.com/openai/v1",
@@ -72,43 +72,58 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Decrypt the API key ONLY on the server
-    // Trimmed defensively in case it was saved before input trimming was added.
+    // 4. Decrypt the API key ONLY on the server.
+    // Trim defensively in case the key was saved before input trimming.
     const apiKey = decrypt(connection.encryptedApiKey).trim();
 
     // 5. Determine which model to use
     const selectedModel = model?.trim() || connection.model;
 
-    // 6. Currently we support OpenAI-compatible providers (xAI, Groq)
+    // 6. Determine the provider's default endpoint
     const defaultEndpoint = OPENAI_COMPATIBLE_ENDPOINTS[provider];
 
     if (!defaultEndpoint) {
       return NextResponse.json(
-        { error: `Provider "${provider}" is not implemented yet.` },
+        {
+          error: `Provider "${provider}" is not implemented yet.`,
+        },
         { status: 400 }
       );
     }
 
-    // 7. Call the provider's chat-completions endpoint
-    const endpoint = connection.endpoint?.trim() || defaultEndpoint;
+    // 7. Use the user's custom endpoint if provided,
+    // otherwise use the provider's default endpoint.
+    const endpoint =
+      connection.endpoint?.trim() || defaultEndpoint;
 
-    const response = await fetch(`${endpoint}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages,
-      }),
-    });
+    // 8. Call the provider's streaming chat-completions endpoint
+    const response = await fetch(
+      `${endpoint}/chat/completions`,
+      {
+        method: "POST",
 
-    // 8. Handle an error returned by the provider
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+
+        body: JSON.stringify({
+          model: selectedModel,
+          messages,
+          stream: true,
+        }),
+      }
+    );
+
+    // 9. Handle provider errors
     if (!response.ok) {
       const errorText = await response.text();
 
-      console.error(`${provider} API error:`, response.status, errorText);
+      console.error(
+        `${provider} API error:`,
+        response.status,
+        errorText
+      );
 
       return NextResponse.json(
         {
@@ -119,26 +134,27 @@ export async function POST(request: Request) {
       );
     }
 
-    // 9. Parse the provider's response
-    const data = await response.json();
-
-    const assistantMessage = data?.choices?.[0]?.message?.content;
-
-    if (!assistantMessage) {
+    // 10. Make sure the provider returned a stream
+    if (!response.body) {
       return NextResponse.json(
-        { error: "AI provider returned an empty response." },
+        {
+          error: "AI provider returned no response stream.",
+        },
         { status: 502 }
       );
     }
 
-    // 10. Send only the useful response back to the browser
-    return NextResponse.json({
-      success: true,
-      provider,
-      model: selectedModel,
-      message: assistantMessage,
+    // 11. Forward the provider's stream directly to the browser
+    return new Response(response.body, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
     });
   } catch (error) {
+    // 12. Handle unexpected server errors
     console.error("AI chat error:", error);
 
     return NextResponse.json(

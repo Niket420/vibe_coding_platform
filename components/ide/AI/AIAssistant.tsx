@@ -138,73 +138,128 @@ export default function AIAssistant({ activeFilePath }: AIAssistantProps) {
     setPickerOpen(false);
   }
 
-  async function handleSend() {
-      const text = draft.trim();
+async function handleSend() {
+  const text = draft.trim();
 
-      if (!text || isGenerating || !config) return;
+  if (!text || isGenerating || !config) return;
 
-      const userMessage: ChatMessage = {
-        id: nextMessageId(),
-        role: "user",
-        content: text,
-        createdAt: Date.now(),
-      };
+  const userMessage: ChatMessage = {
+    id: nextMessageId(),
+    role: "user",
+    content: text,
+    createdAt: Date.now(),
+  };
 
-      const updatedMessages = [...messages, userMessage];
+  const updatedMessages = [...messages, userMessage];
 
-      setMessages(updatedMessages);
-      setDraft("");
-      setIsGenerating(true);
+  setMessages(updatedMessages);
+  setDraft("");
+  setIsGenerating(true);
 
-      try {
-        const response = await fetch("/api/ai/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            provider: config.providerId,
-            model: config.model,
-            messages: updatedMessages.map((message) => ({
-              role: message.role,
-              content: message.content,
-            })),
-          }),
-        });
+  // Create an empty assistant message immediately.
+  const assistantId = nextMessageId();
 
-        const data = await response.json();
+  setMessages((previous) => [
+    ...previous,
+    {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      createdAt: Date.now(),
+    },
+  ]);
 
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || "AI request failed.");
+  try {
+    const response = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        provider: config.providerId,
+        model: config.model,
+        messages: updatedMessages.map((message) => ({
+          role: message.role,
+          content: message.content,
+        })),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("AI request failed.");
+    }
+
+    if (!response.body) {
+      throw new Error("AI response has no stream.");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    let accumulatedText = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+
+      if (done) break;
+
+      const chunk = decoder.decode(value, {
+        stream: true,
+      });
+
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+
+        const data = line.slice(6).trim();
+
+        if (data === "[DONE]") continue;
+
+        try {
+          const parsed = JSON.parse(data);
+
+          const content =
+            parsed?.choices?.[0]?.delta?.content;
+
+          if (!content) continue;
+
+          accumulatedText += content;
+
+          setMessages((previous) =>
+            previous.map((message) =>
+              message.id === assistantId
+                ? {
+                    ...message,
+                    content: accumulatedText,
+                  }
+                : message
+            )
+          );
+        } catch {
+          // Ignore incomplete SSE chunks.
         }
-
-        setMessages((previous) => [
-          ...previous,
-          {
-            id: nextMessageId(),
-            role: "assistant",
-            content: data.message,
-            createdAt: Date.now(),
-          },
-        ]);
-      } catch (error) {
-        console.error("AI request error:", error);
-
-        setMessages((previous) => [
-          ...previous,
-          {
-            id: nextMessageId(),
-            role: "assistant",
-            content:
-              error instanceof Error
-                ? `Error: ${error.message}`
-                : "Sorry, the AI request failed.",
-            createdAt: Date.now(),
-          },
-        ]);
-      } finally {
-        setIsGenerating(false);
       }
+    }
+  } catch (error) {
+    console.error("AI request error:", error);
+
+    setMessages((previous) =>
+      previous.map((message) =>
+        message.id === assistantId
+          ? {
+              ...message,
+              content:
+                error instanceof Error
+                  ? `Error: ${error.message}`
+                  : "Sorry, the AI request failed.",
+            }
+          : message
+      )
+    );
+  } finally {
+    setIsGenerating(false);
+  }
 }
 
   function handleStop() {
