@@ -1,0 +1,83 @@
+<svg width="900" height="400" viewBox="0 0 900 400" fill="none" xmlns="http://www.w3.org/2000/svg" font-family="'SF Mono','JetBrains Mono',Menlo,Consolas,monospace">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="900" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#161b22" />
+      <stop offset="1" stop-color="#0d1117" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="900" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0d92ef" />
+      <stop offset="1" stop-color="#7ee2ff" />
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14" />
+    </filter>
+  </defs>
+
+  <!-- window -->
+  <rect x="1" y="1" width="898" height="398" rx="14" fill="url(#bg)" stroke="#30363d" />
+  <circle cx="450" cy="399" r="140" fill="#0d92ef" opacity="0.10" filter="url(#soft)" />
+
+  <!-- title bar -->
+  <rect x="1" y="1" width="898" height="40" rx="14" fill="#161b22" />
+  <rect x="1" y="27" width="898" height="14" fill="#161b22" />
+  <circle cx="26" cy="21" r="6" fill="#ff5f57" />
+  <circle cx="46" cy="21" r="6" fill="#febc2e" />
+  <circle cx="66" cy="21" r="6" fill="#28c840" />
+  <text x="450" y="26" text-anchor="middle" font-size="13" fill="#8b949e">portfolio-studio</text>
+  <text x="850" y="26" text-anchor="end" font-size="13" fill="#7ee2ff">main* ⇡2</text>
+  <line x1="1" y1="41" x2="899" y2="41" stroke="#30363d" />
+
+  <!-- sidebar -->
+  <line x1="150" y1="41" x2="150" y2="399" stroke="#30363d" />
+  <rect x="1" y="70" width="149" height="26" fill="#0d92ef" opacity="0.12" />
+  <rect x="1" y="70" width="3" height="26" fill="#0d92ef" />
+  <text x="20" y="88" font-size="13" fill="#e6edf3">Explorer</text>
+  <text x="20" y="122" font-size="13" fill="#8b949e">Search</text>
+  <text x="20" y="156" font-size="13" fill="#8b949e">Git</text>
+  <circle cx="66" cy="152" r="8" fill="#238636" />
+  <text x="66" y="156" text-anchor="middle" font-size="10" fill="#e6edf3">2</text>
+  <text x="20" y="190" font-size="13" fill="#8b949e">AI Assistant</text>
+  <path d="M108 178 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3 z" fill="#7ee2ff" />
+
+  <text x="20" y="230" font-size="11" fill="#484f58">src/app/</text>
+  <text x="30" y="252" font-size="12" fill="#e6edf3">page.tsx</text>
+  <text x="30" y="274" font-size="12" fill="#8b949e">layout.tsx</text>
+  <text x="30" y="296" font-size="12" fill="#8b949e">globals.css</text>
+
+  <!-- editor tab -->
+  <rect x="150" y="41" width="140" height="30" fill="#0d1117" />
+  <text x="170" y="61" font-size="12" fill="#e6edf3">page.tsx</text>
+  <circle cx="278" cy="56" r="3" fill="#8b949e" />
+  <line x1="150" y1="71" x2="290" y2="71" stroke="#0d92ef" stroke-width="2" />
+
+  <!-- code lines -->
+  <text x="170" y="105" font-size="13" fill="#484f58">1</text>
+  <text x="195" y="105" font-size="13" fill="#ff7b72">export default function</text>
+  <text x="405" y="105" font-size="13" fill="#d2a8ff">Home</text>
+  <text x="440" y="105" font-size="13" fill="#e6edf3">() {</text>
+
+  <text x="170" y="130" font-size="13" fill="#484f58">2</text>
+  <text x="195" y="130" font-size="13" fill="#ff7b72">return</text>
+  <text x="250" y="130" font-size="13" fill="#7ee787">&lt;main&gt;</text>
+  <text x="310" y="130" font-size="13" fill="#e6edf3">Ship it.</text>
+  <text x="390" y="130" font-size="13" fill="#7ee787">&lt;/main&gt;</text>
+
+  <text x="170" y="155" font-size="13" fill="#484f58">3</text>
+  <text x="195" y="155" font-size="13" fill="#e6edf3">}</text>
+
+  <line x1="150" y1="180" x2="899" y2="180" stroke="#30363d" />
+
+  <!-- terminal -->
+  <text x="170" y="210" font-size="13" fill="#8b949e">▸</text>
+  <text x="195" y="210" font-size="13" fill="#e6edf3">npm run dev</text>
+
+  <path d="M170 232 l4 4 6 -8" stroke="#7ee787" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="195" y="238" font-size="13" fill="#7ee787">ready</text>
+  <text x="245" y="238" font-size="13" fill="#8b949e">on</text>
+  <text x="270" y="238" font-size="13" fill="#7ee2ff">http://localhost:3000</text>
+
+  <rect x="150" y="260" width="749" height="1" fill="#21262d" />
+
+  <!-- accent underline -->
+  <rect x="1" y="396" width="898" height="3" rx="1.5" fill="url(#accent)" />
+</svg>

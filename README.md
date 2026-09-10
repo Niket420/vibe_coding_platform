@@ -18,18 +18,7 @@ No install, no Docker, no `ssh` — just a URL.
 
 <br />
 
-```
-┌─ portfolio-studio ──────────────────────────────────────── main* ⇡2 ─┐
-│ Explorer   src/app/page.tsx                                          │
-│ Search     ┌────────────────────────────────────────────────────┐   │
-│ Git ●2     │ 1  export default function Home() {                │   │
-│ AI  ✦      │ 2    return <main>Ship it.</main>                  │   │
-│            │ 3  }                                                │   │
-│            └────────────────────────────────────────────────────┘   │
-│ ▸ npm run dev                                                        │
-│   ✓ ready on http://localhost:3000                                  │
-└────────────────────────────────────────────────────────────────────┘
-```
+<img src="./public/hero.svg" width="820" alt="CodeForge editor mockup — file explorer, code editor, and a running dev server in an integrated terminal" />
 
 </div>
 
@@ -62,6 +51,30 @@ Not a mockup. Not "coming soon." Here's what runs today:
 | ⌘K **Command palette** | Fuzzy-jump to any file or panel without touching the mouse |
 | 🔐 **Auth & data** | Clerk for sign-in, Postgres + Prisma for connections — themed to match, not bolted on |
 
+### 🧠 Under active construction: the context engine
+
+`contextEnginer/` is a standalone TypeScript package that will make good on the
+tagline — an assistant that reads your workspace instead of guessing at it.
+It's not a wrapper around embeddings; it's a proper code-intelligence
+pipeline that runs against the live WebContainer filesystem:
+
+1. **`FileScanner`** walks the workspace and classifies every source file.
+2. **`CodeParser`** (built on `web-tree-sitter`) turns each file into a
+   structured `ParsedFile` — its imports, exports, functions, classes.
+3. **`SymbolIndex`** and **`ImportResolver`** turn those into a queryable
+   symbol table and resolved module graph.
+4. **`CodeGraph`** stitches files together by `imports`/`exports` edges, so
+   "what does this file touch?" is a graph traversal, not a grep.
+5. **`ContextWatcher`** / **`FileWatcher`** keep all of the above in sync as
+   files change, instead of re-indexing from scratch.
+6. A **hybrid retriever** — `LexicalRetriever` + `SymbolRetriever` +
+   `GraphRetriever`, merged by a `CandidateScorer` — will turn "answer this
+   question" into "here are the exact files and symbols that matter."
+
+Scanner, parser, index, and graph are implemented; retrieval and scoring are
+being built out now, and it isn't wired into the AI chat route yet — see
+[Roadmap](#roadmap).
+
 ## Architecture
 
 ```mermaid
@@ -71,19 +84,23 @@ flowchart LR
         Monaco["Monaco Editor"]
         XTerm["xterm.js"]
         Git["isomorphic-git"]
+        CE["contextEnginer\n(scanner · graph · retrieval)"]
         WC["WebContainer\n(WASM Node.js runtime)"]
 
         UI --> Monaco
         UI --> XTerm
         UI --> Git
+        UI --> CE
         XTerm <--> WC
         Monaco <--> WC
         Git <--> WC
+        CE <--> WC
         WC -- "server-ready" --> UI
     end
 
     GH["GitHub App\n(OAuth + installation tokens)"] <--> UI
     AI["AI Provider\n(xAI / Groq / ...)"] <--> Server
+    CE -. "planned: retrieved context" .-> AI
     Clerk["Clerk (auth)"] --> Server
     DB[("Postgres via Prisma\nencrypted keys · connections")] --> Server
     Server["Next.js Server"] --> UI
@@ -102,6 +119,7 @@ tokens, decrypt an AI key for one outbound call, and get out of the way.
 | Editor | `@monaco-editor/react` |
 | Terminal | `@xterm/xterm` + `@xterm/addon-fit` |
 | Version control | `isomorphic-git` (local) + a GitHub App (remote) |
+| Context engine | `contextEnginer/` — `web-tree-sitter` parser, symbol index, import/code graph, hybrid retrieval (in development) |
 | AI | Provider-agnostic chat layer, OpenAI-compatible transport |
 | Auth | Clerk |
 | Database | PostgreSQL + Prisma |
@@ -177,6 +195,15 @@ my-app/
 │   ├── git.ts  git-fs.ts         # isomorphic-git + WebContainer FS bridge
 │   ├── github.ts                 # GitHub App token minting
 │   └── encryption.ts             # AES-256-GCM for stored API keys
+├── contextEnginer/                # Standalone code-intelligence package
+│   └── src/
+│       ├── scanner/               # FileScanner — walks the workspace
+│       ├── parser/                # web-tree-sitter → ParsedFile
+│       ├── graph/                 # CodeGraph (import/export edges)
+│       ├── index/                 # SymbolIndex, ContextIndex, ContextWatcher
+│       ├── resolver/              # ImportResolver
+│       ├── retrieval/             # Lexical / Symbol / Graph retrievers + scorer
+│       └── watcher/               # FileWatcher for incremental re-indexing
 └── prisma/
     └── schema.prisma
 ```
@@ -186,6 +213,7 @@ my-app/
 **Shipped this cycle:** full local git, GitHub App integration, and a
 working multi-provider AI assistant — these used to be roadmap bullets.
 
+- [ ] Finish the hybrid retriever in `contextEnginer/` (`CandidateScorer` is the current piece in progress) and wire it into `/api/ai/chat` so the assistant answers from real retrieved context, not just the open file
 - [ ] Persist dashboard projects to Postgres (currently a UI mock)
 - [ ] Real template scaffolding — picking "React" should write files, not just navigate
 - [ ] Wire the remaining AI providers (OpenAI, Anthropic, Gemini, OpenRouter, Custom, Local) to live chat calls
