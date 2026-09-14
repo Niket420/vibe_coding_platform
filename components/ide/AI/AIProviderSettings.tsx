@@ -180,8 +180,8 @@ export default function AIProviderSettings({
                 </button>
               </div>
               <p className="mt-1 text-[10px] leading-4 text-[#6e7681]">
-                Stored only in this session's memory. Nothing is sent or saved
-                until the backend is wired up.
+                Encrypted and saved to your account — it stays connected
+                across page refreshes and devices.
               </p>
             </Field>
 

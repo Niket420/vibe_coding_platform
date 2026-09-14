@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { WebContainer } from "@webcontainer/api";
 import {
   ChevronDown,
   Loader2,
@@ -18,9 +19,16 @@ import AIProviderSettings from "./AIProviderSettings";
 import AIChat from "./AIChat";
 import AIInput from "./AIInput";
 import { AI_PROVIDERS, type ChatMessage, type ContextMode, type ProviderConfig } from "./types";
+import { gatherContext, type OpenFile } from "./contextGather";
+import { useToast } from "@/components/ui/toast";
+import type { FileTreeNode } from "@/types/file-tree";
 
 type AIAssistantProps = {
   activeFilePath?: string;
+  webcontainer?: WebContainer | null;
+  openedFiles?: OpenFile[];
+  fileTree?: FileTreeNode[];
+  selectedCode?: string;
 };
 
 let messageCounter = 0;
@@ -29,12 +37,14 @@ function nextMessageId() {
   return `msg-${Date.now()}-${messageCounter}`;
 }
 
-function contextLabel(mode: ContextMode, activeFilePath?: string) {
+function contextLabel(mode: ContextMode, activeFilePath?: string, selectedCode?: string) {
   switch (mode) {
     case "current-file":
       return activeFilePath ? activeFilePath.split("/").pop()! : "No file open";
     case "selected-code":
-      return "No selection";
+      return selectedCode && selectedCode.trim()
+        ? `${selectedCode.trim().split("\n").length} line(s) selected`
+        : "No selection";
     case "open-files":
       return "All open files";
     case "workspace":
@@ -42,7 +52,14 @@ function contextLabel(mode: ContextMode, activeFilePath?: string) {
   }
 }
 
-export default function AIAssistant({ activeFilePath }: AIAssistantProps) {
+export default function AIAssistant({
+  activeFilePath,
+  webcontainer = null,
+  openedFiles = [],
+  fileTree = [],
+  selectedCode = "",
+}: AIAssistantProps) {
+  const { push: pushToast } = useToast();
   const [config, setConfig] = useState<ProviderConfig | null>(null);
   const [savedConnections, setSavedConnections] = useState<ProviderConfig[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
@@ -73,7 +90,13 @@ export default function AIAssistant({ activeFilePath }: AIAssistantProps) {
         const response = await fetch("/api/ai/providers");
         const data = await response.json();
 
-        if (!cancelled && response.ok && data.success && Array.isArray(data.providers)) {
+        if (cancelled) return;
+
+        if (!response.ok || !data.success) {
+          throw new Error(data?.error || "Failed to load saved AI providers.");
+        }
+
+        if (Array.isArray(data.providers)) {
           const connections: ProviderConfig[] = data.providers.map(
             (entry: { provider: string; model: string; endpoint: string | null }) => ({
               providerId: entry.provider as ProviderConfig["providerId"],
@@ -85,8 +108,18 @@ export default function AIAssistant({ activeFilePath }: AIAssistantProps) {
           setSavedConnections(connections);
           if (connections.length > 0) setConfig(connections[0]);
         }
-      } catch {
-        // No saved connections reachable — fall back to the empty "configure" state.
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error("Failed to load saved AI providers:", error);
+        pushToast({
+          tone: "error",
+          title: "Couldn't load saved providers",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Your saved AI provider connections could not be loaded. Refresh to try again.",
+        });
       } finally {
         if (!cancelled) setLoadingConnections(false);
       }
@@ -95,7 +128,7 @@ export default function AIAssistant({ activeFilePath }: AIAssistantProps) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [pushToast]);
 
   const currentProvider = config ? AI_PROVIDERS.find((p) => p.id === config.providerId) : undefined;
   const pendingProvider = pendingProviderId
@@ -170,6 +203,30 @@ async function handleSend() {
   ]);
 
   try {
+    const contextContent = await gatherContext(contextMode, {
+      webcontainer,
+      openedFiles,
+      fileTree,
+      activeFilePath,
+      selectedCode,
+      query: text,
+    });
+
+    const requestMessages = [
+      ...(contextContent
+        ? [
+            {
+              role: "system" as const,
+              content: `Use the following project context to help answer the user's request. Only rely on it when it's relevant.\n${contextContent}`,
+            },
+          ]
+        : []),
+      ...updatedMessages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+    ];
+
     const response = await fetch("/api/ai/chat", {
       method: "POST",
       headers: {
@@ -178,10 +235,7 @@ async function handleSend() {
       body: JSON.stringify({
         provider: config.providerId,
         model: config.model,
-        messages: updatedMessages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
+        messages: requestMessages,
       }),
     });
 
@@ -469,7 +523,7 @@ async function handleSend() {
             isGenerating={isGenerating}
             contextMode={contextMode}
             onContextModeChange={setContextMode}
-            contextLabel={contextLabel(contextMode, activeFilePath)}
+            contextLabel={contextLabel(contextMode, activeFilePath, selectedCode)}
             focusToken={inputFocusToken}
           />
         </>
