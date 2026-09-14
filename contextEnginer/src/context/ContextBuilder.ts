@@ -29,6 +29,7 @@ export class ContextBuilder {
     candidates: Candidate[],
   ): Promise<BuiltContext> {
     const regions: ContextRegion[] = [];
+    const handledPaths = new Set<string>();
 
     const symbols = this.collectRelevantSymbols(candidates);
 
@@ -54,6 +55,37 @@ export class ContextBuilder {
         content: regionContent,
         score,
       });
+
+      handledPaths.add(symbol.filePath);
+    }
+
+    // Candidates found only through graph/lexical retrieval (no symbol name
+    // matched the query) carry no `symbols` — without this they'd be silently
+    // dropped even though they're exactly what a natural-language query like
+    // "how does auth work" is meant to surface. Fall back to the whole file.
+    for (const candidate of candidates) {
+      if (candidate.symbols.length > 0 || handledPaths.has(candidate.path)) {
+        continue;
+      }
+
+      try {
+        const content = await webcontainer.fs.readFile(
+          candidate.path,
+          "utf-8",
+        );
+
+        regions.push({
+          path: candidate.path,
+          startLine: 1,
+          endLine: content.split("\n").length,
+          content,
+          score: candidate.score,
+        });
+
+        handledPaths.add(candidate.path);
+      } catch {
+        // File may no longer exist — skip it.
+      }
     }
 
     return {

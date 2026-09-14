@@ -57,6 +57,7 @@ export default function PlaygroundPage() {
   const [selectedType, setSelectedType] = useState<"file" | "directory" | "">(
     "",
   );
+  const [selectedCode, setSelectedCode] = useState("");
 
   async function refreshFileTree(wc: WebContainer) {
     const tree = await readDirectory(wc, ".");
@@ -305,7 +306,13 @@ export default function PlaygroundPage() {
                         activeActivity === "assistant" ? "block" : "hidden"
                       }`}
                     >
-                      <AIAssistant activeFilePath={activeFilePath} />
+                      <AIAssistant
+                        activeFilePath={activeFilePath}
+                        webcontainer={webcontainer}
+                        openedFiles={openedFiles}
+                        fileTree={fileTree}
+                        selectedCode={selectedCode}
+                      />
                     </div>
 
                     <div
@@ -348,6 +355,7 @@ export default function PlaygroundPage() {
                     setDiffTabs={setDiffTabs}
                     activeDiffId={activeDiffId}
                     setActiveDiffId={setActiveDiffId}
+                    onSelectionChange={setSelectedCode}
                   />
                 </Panel>
 

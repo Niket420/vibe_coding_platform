@@ -2,31 +2,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { SourceFile } from "../types";
+import { LANGUAGE_MAP, IGNORED_DIRECTORIES } from "./languageMap";
 
-const LANGUAGE_MAP: Record<string, string> = {
-  ".ts": "typescript",
-  ".tsx": "typescript",
-  ".js": "javascript",
-  ".jsx": "javascript",
-  ".py": "python",
-  ".java": "java",
-  ".go": "go",
-  ".rs": "rust",
-  ".cpp": "cpp",
-  ".c": "c",
-  ".h": "c",
-  ".hpp": "cpp",
-};
-
-const IGNORED_DIRECTORIES = new Set([
-  ".git",
-  ".next",
-  "node_modules",
-  "dist",
-  "build",
-  "coverage",
-]);
-
+/**
+ * Scans a real OS filesystem. This app's workspace only exists inside a
+ * browser-side WebContainer, so this scanner isn't reachable from the running
+ * app — see WebContainerFileScanner for the one actually used at runtime.
+ * Kept for potential server-side/CLI use of this engine against a real disk.
+ */
 export class FileScanner {
   async scan(rootPath: string): Promise<SourceFile[]> {
     const absoluteRoot = path.resolve(rootPath);

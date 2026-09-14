@@ -47,10 +47,10 @@ export class CodeGraph {
       });
     }
 
-    for (const exportName of parsedFile.exports) {
+    for (const exportedSymbol of parsedFile.exports) {
       this.addEdge({
         from: filePath,
-        to: exportName,
+        to: exportedSymbol.name,
         type: "exports",
       });
     }

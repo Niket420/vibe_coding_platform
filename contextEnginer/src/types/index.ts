@@ -20,3 +20,11 @@ export type ParsedFile = {
 
   imports: string[];
 };
+
+export type SourceFile = {
+  path: string;
+  absolutePath: string;
+  extension: string;
+  language: string;
+  size: number;
+};

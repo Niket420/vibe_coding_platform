@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import MonacoEditor, { DiffEditor } from "@monaco-editor/react";
+import MonacoEditor, { DiffEditor, type OnMount } from "@monaco-editor/react";
 import { FileCode2, GitCompare, X } from "lucide-react";
 import { WebContainer } from "@webcontainer/api";
 import SaveDialog from "./SaveDialog";
@@ -30,6 +30,7 @@ type EditorProps = {
   setDiffTabs: React.Dispatch<React.SetStateAction<DiffTab[]>>;
   activeDiffId: string | null;
   setActiveDiffId: React.Dispatch<React.SetStateAction<string | null>>;
+  onSelectionChange?: (selectedText: string) => void;
 };
 
 const languagesByExtension: Record<string, string> = {
@@ -61,11 +62,30 @@ export default function Editor({
   setDiffTabs,
   activeDiffId,
   setActiveDiffId,
+  onSelectionChange,
 }: EditorProps) {
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
   const [pendingClosePath, setPendingClosePath] = useState<string | null>(null);
   const activeDiff = diffTabs.find((diff) => diff.id === activeDiffId) ?? null;
   const currentFile = activeDiff ? null : openedFiles.find((file) => file.path === activeFilePath) ?? null;
+
+  const handleEditorMount: OnMount = useCallback((editor) => {
+    editor.onDidChangeCursorSelection(() => {
+      const selection = editor.getSelection();
+      const model = editor.getModel();
+
+      if (!selection || !model || selection.isEmpty()) {
+        onSelectionChange?.("");
+        return;
+      }
+
+      onSelectionChange?.(model.getValueInRange(selection));
+    });
+  }, [onSelectionChange]);
+
+  useEffect(() => {
+    onSelectionChange?.("");
+  }, [activeFilePath, onSelectionChange]);
 
   function closeDiffTab(id: string) {
     setDiffTabs((previousDiffs) => previousDiffs.filter((diff) => diff.id !== id));
@@ -232,6 +252,7 @@ export default function Editor({
             language={languageForPath(currentFile.path)}
             theme="vs-dark"
             value={currentFile.content}
+            onMount={handleEditorMount}
             onChange={(value) => {
               setOpenedFiles((previousFiles) => previousFiles.map((file) => (
                 file.path === activeFilePath

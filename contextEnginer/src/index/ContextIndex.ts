@@ -6,6 +6,7 @@ import { SymbolIndex } from "./SymbolIndex";
 import { ImportResolver } from "../resolver/ImportResolver";
 import { CodeGraph } from "../graph/CodeGraph";
 import type { FileChange } from "../watcher/FileWatcher";
+import { statPath } from "../scanner/webcontainerFs";
 
 /**
  * Coordinates the repository indexing components.
@@ -155,7 +156,7 @@ export class ContextIndex {
     );
 
     // Convert the source code into structural information.
-    const parsedFile = this.parser.parse(
+    const parsedFile = await this.parser.parse(
       {
         path: sourceFile.path,
         language: sourceFile.language,
@@ -196,10 +197,11 @@ export class ContextIndex {
   ): Promise<SourceFile | null> {
     try {
       // Ask WebContainer for information about the filesystem entry.
-      const stat = await webcontainer.fs.stat(filePath);
+      const { exists, isDirectory } = await statPath(webcontainer, filePath);
 
-      // Directories are not source files.
-      if (stat.isDirectory()) {
+      // The file may have disappeared between the watcher event and this
+      // lookup, or the path may point at a directory — neither is a source file.
+      if (!exists || isDirectory) {
         return null;
       }
 
@@ -211,16 +213,16 @@ export class ContextIndex {
         return null;
       }
 
+      const content = await webcontainer.fs.readFile(filePath, "utf-8");
+
       return {
         path: filePath,
         absolutePath: filePath,
         extension,
         language,
-        size: stat.size,
+        size: new TextEncoder().encode(content).length,
       };
     } catch {
-      // The file may have disappeared between the watcher
-      // event and this filesystem lookup.
       return null;
     }
   }

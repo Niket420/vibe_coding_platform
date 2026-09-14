@@ -1,0 +1,14 @@
+{
+  "name": "contextEnginer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Symbol/graph/lexical retrieval engine that builds LLM context from a live workspace.",
+  "main": "src/index.ts",
+  "dependencies": {
+    "web-tree-sitter": "^0.27.0",
+    "tree-sitter-wasms": "^0.1.13"
+  },
+  "peerDependencies": {
+    "@webcontainer/api": "*"
+  }
+}

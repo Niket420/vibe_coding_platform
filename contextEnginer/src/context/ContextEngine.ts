@@ -1,6 +1,5 @@
 import type { WebContainer } from "@webcontainer/api";
 
-import type { SymbolIndex } from "../index/SymbolIndex";
 import type { SymbolRetriever } from "../retrieval/SymbolRetriever";
 import type { GraphRetriever } from "../retrieval/GraphRetriever";
 import type { LexicalRetriever } from "../retrieval/LexicalRetriever";
@@ -16,6 +15,10 @@ import { ContextOptimizer } from "./ContextOptimizer";
 
 export type ContextEngineOptions = {
   maxTokens?: number;
+  // File paths eligible for lexical (full-text) search.
+  filePaths?: string[];
+  // Seeds graph retrieval, e.g. the file the user currently has open.
+  activeFilePath?: string;
 };
 
 export class ContextEngine {
@@ -26,7 +29,6 @@ export class ContextEngine {
     private readonly symbolRetriever: SymbolRetriever,
     private readonly graphRetriever: GraphRetriever,
     private readonly lexicalRetriever: LexicalRetriever,
-    private readonly symbolIndex: SymbolIndex,
     private readonly contextBuilder: ContextBuilder,
   ) {}
 
@@ -37,14 +39,20 @@ export class ContextEngine {
   ): Promise<BuiltContext> {
     const maxTokens = options.maxTokens ?? 8000;
 
-    const symbolResults =
-      await this.symbolRetriever.search(query);
+    const symbolResults = this.symbolRetriever.retrieve(query);
 
-    const graphResults =
-      await this.graphRetriever.search(query);
+    // Graph retrieval walks outward from a specific file — nothing to do
+    // without one (e.g. the file the user currently has open).
+    const graphResults = options.activeFilePath
+      ? this.graphRetriever.retrieve(options.activeFilePath)
+      : [];
 
+    // Lexical retrieval scans specific files' text — nothing to search
+    // without a candidate file list.
     const lexicalResults =
-      await this.lexicalRetriever.search(query);
+      options.filePaths && options.filePaths.length > 0
+        ? await this.lexicalRetriever.retrieve(webcontainer, options.filePaths, query)
+        : [];
 
     const candidates =
       this.candidateScorer.merge(

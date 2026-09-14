@@ -1,4 +1,5 @@
-import type { WebContainer } from "@webcontainer/api";
+import type { IFSWatcher, WebContainer } from "@webcontainer/api";
+import { statPath } from "../scanner/webcontainerFs";
 
 /**
  * Represents a change detected in the workspace.
@@ -22,7 +23,7 @@ export type FileChange =
  * source-file changes to the Context Engine.
  */
 export class FileWatcher {
-  private unsubscribe: (() => void) | null = null;
+  private watcher: IFSWatcher | null = null;
 
   /**
    * Starts watching the WebContainer filesystem.
@@ -33,7 +34,7 @@ export class FileWatcher {
   ): void {
     this.stop();
 
-    this.unsubscribe = webcontainer.fs.watch(
+    this.watcher = webcontainer.fs.watch(
       ".",
       {
         recursive: true,
@@ -68,9 +69,9 @@ export class FileWatcher {
    * Stops watching the filesystem.
    */
   stop(): void {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
+    if (this.watcher) {
+      this.watcher.close();
+      this.watcher = null;
     }
   }
 
@@ -107,18 +108,11 @@ export class FileWatcher {
     filePath: string,
     onChange: (change: FileChange) => void,
   ): Promise<void> {
-    try {
-      await webcontainer.fs.stat(filePath);
+    const { exists } = await statPath(webcontainer, filePath);
 
-      onChange({
-        type: "created",
-        path: filePath,
-      });
-    } catch {
-      onChange({
-        type: "deleted",
-        path: filePath,
-      });
-    }
+    onChange({
+      type: exists ? "created" : "deleted",
+      path: filePath,
+    });
   }
 }
