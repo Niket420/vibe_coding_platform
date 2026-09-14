@@ -320,29 +320,47 @@ export async function pushRemote(
 /* Clone                                                                       */
 /* -------------------------------------------------------------------------- */
 
+export type CloneProgress = { phase: string; loaded: number; total: number };
+
 export async function cloneRepository(
   url: string,
-  token: string,
+  token?: string,
   dir = ".",
-  options?: { force?: boolean }
+  options?: { force?: boolean; onProgress?: (progress: CloneProgress) => void }
 ) {
   await getWebContainer();
 
-  const onAuth = () => ({
-    username: "x-access-token",
-    password: token,
-  });
+  // Public repos need no credentials at all — only pass onAuth when we
+  // actually have a token (private repos via the GitHub App installation).
+  const onAuth = token
+    ? () => ({
+        username: "x-access-token",
+        password: token,
+      })
+    : undefined;
+
+  // A full clone (every branch, full history) means isomorphic-git — a pure-JS
+  // git implementation running inside a WebContainer — has to download the
+  // entire object database through a public CORS proxy. For an active repo
+  // that's a lot of data with the UI showing nothing but a spinner, which just
+  // looks hung. Default to a shallow, single-branch clone (what most
+  // browser-based IDEs do) so cloning stays fast; other branches can still be
+  // fetched/checked out afterwards.
+  const cloneOptions = {
+    fs: gitFs,
+    http,
+    dir,
+    url,
+    singleBranch: true,
+    depth: 1,
+    noTags: true,
+    onAuth,
+    onProgress: options?.onProgress,
+    corsProxy: "https://cors.isomorphic-git.org",
+  };
 
   if (!options?.force) {
-    return await git.clone({
-      fs: gitFs,
-      http,
-      dir,
-      url,
-      singleBranch: false,
-      onAuth,
-      corsProxy: "https://cors.isomorphic-git.org",
-    });
+    return await git.clone(cloneOptions);
   }
 
   // Cloning into a non-empty working directory (e.g. a workspace that already has
@@ -350,14 +368,8 @@ export async function cloneRepository(
   // Fetch and set up refs/remote without writing files, then force the checkout
   // to overwrite just those conflicting paths instead of the whole workdir.
   await git.clone({
-    fs: gitFs,
-    http,
-    dir,
-    url,
-    singleBranch: false,
+    ...cloneOptions,
     noCheckout: true,
-    onAuth,
-    corsProxy: "https://cors.isomorphic-git.org",
   });
 
   const branch = await git.currentBranch({ fs: gitFs, dir, fullname: false });
