@@ -50,6 +50,7 @@ export default function PlaygroundPage() {
   const [activeDiffId, setActiveDiffId] = useState<string | null>(null);
   const [activeActivity, setActiveActivity] = useState("explorer");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -226,8 +227,8 @@ export default function PlaygroundPage() {
             activityItems={activityItems}
             onSelectActivity={handleSelectActivity}
             onOpenFile={openFile}
-            aiOpen={activeActivity === "assistant" && sidebarOpen}
-            onToggleAI={() => handleSelectActivity("assistant")}
+            aiOpen={aiPanelOpen}
+            onToggleAI={() => setAiPanelOpen((open) => !open)}
             terminalOpen={terminalOpen}
             onToggleTerminal={() => setTerminalOpen((open) => !open)}
             previewOpen={previewOpen}
@@ -298,20 +299,6 @@ export default function PlaygroundPage() {
                           await refreshFileTree(webcontainer);
                         }}
                         onOpenDiff={openDiff}
-                      />
-                    </div>
-
-                    <div
-                      className={`absolute inset-0 ${
-                        activeActivity === "assistant" ? "block" : "hidden"
-                      }`}
-                    >
-                      <AIAssistant
-                        activeFilePath={activeFilePath}
-                        webcontainer={webcontainer}
-                        openedFiles={openedFiles}
-                        fileTree={fileTree}
-                        selectedCode={selectedCode}
                       />
                     </div>
 
@@ -434,6 +421,27 @@ export default function PlaygroundPage() {
                       <Preview previewUrl={previewUrl} />
                     </div>
                   </section>
+                </Panel>
+              </>
+            )}
+
+            {aiPanelOpen && (
+              <>
+                <Separator className="w-px bg-[#262626] transition-colors hover:bg-[#404040]" />
+
+                <Panel
+                  id="ai-assistant"
+                  defaultSize={380}
+                  minSize={300}
+                  maxSize={560}
+                >
+                  <AIAssistant
+                    activeFilePath={activeFilePath}
+                    webcontainer={webcontainer}
+                    openedFiles={openedFiles}
+                    fileTree={fileTree}
+                    selectedCode={selectedCode}
+                  />
                 </Panel>
               </>
             )}

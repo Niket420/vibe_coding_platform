@@ -59,7 +59,7 @@ export default function AIProviderSelector({
                 onClick={() => onSelect(provider)}
                 className="flex w-full items-center gap-3 border-b border-[#1a1a1a] px-3 py-2.5 text-left transition hover:bg-[#1a1a1a]"
               >
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[#262626] bg-[#121212] text-[#a371f7]">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[#262626] bg-[#121212] text-[#e6edf3]">
                   <Icon size={15} />
                 </span>
                 <span className="min-w-0 flex-1">

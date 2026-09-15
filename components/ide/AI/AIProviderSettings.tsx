@@ -113,7 +113,7 @@ export default function AIProviderSettings({
         >
           <ChevronLeft size={15} />
         </button>
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-[#262626] bg-[#121212] text-[#a371f7]">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-[#262626] bg-[#121212] text-[#e6edf3]">
           <Icon size={14} />
         </span>
         <div className="min-w-0">

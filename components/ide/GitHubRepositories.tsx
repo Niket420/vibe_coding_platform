@@ -51,6 +51,81 @@ function formatCloneProgress(progress: CloneProgress | null): string {
   return pct !== null ? `${progress.phase}… ${pct}%` : `${progress.phase}…`;
 }
 
+// GitHub's REST API sends CORS headers for public reads, so this can be
+// called directly from the browser with no proxy — used to warn about large
+// repos *before* starting a clone that will run entirely in-browser.
+async function fetchGithubRepoSizeKb(url: string): Promise<number | null> {
+  const match = url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/);
+  if (!match) return null;
+
+  const [, owner, repo] = match;
+
+  try {
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return typeof data.size === "number" ? data.size : null;
+  } catch {
+    return null;
+  }
+}
+
+const LARGE_REPO_WARNING_KB = 50 * 1024; // 50 MB
+
+function formatKb(sizeKb: number): string {
+  return sizeKb >= 1024 ? `${Math.round(sizeKb / 1024)} MB` : `${sizeKb} KB`;
+}
+
+// isomorphic-git has no real cancellation (its `signal` option is explicitly
+// unimplemented) so this can't stop the underlying transfer — but without
+// this, a genuinely stuck clone leaves the UI spinning forever with no way
+// out. Rather than a flat timeout (which would cut off a large repo that's
+// still legitimately progressing), this only fires if no progress event
+// arrives for a while — a real stall, not just "slow."
+const STALL_TIMEOUT_MS = 45 * 1000;
+
+class CloneStalledError extends Error {}
+
+function withStallWatchdog<T>(
+  run: (onProgress: (progress: CloneProgress) => void) => Promise<T>,
+  onProgress: (progress: CloneProgress) => void,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    function resetTimer() {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new CloneStalledError("No progress for a while — this looks stuck."));
+      }, STALL_TIMEOUT_MS);
+    }
+
+    resetTimer();
+
+    run((progress) => {
+      resetTimer();
+      onProgress(progress);
+    }).then(
+      (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export default function GitHubRepositories({ onCloned }: GitHubRepositoriesProps) {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,6 +169,16 @@ export default function GitHubRepositories({ onCloned }: GitHubRepositoriesProps
   }, []);
 
   async function handleClone(repo: Repository, force = false) {
+    if (!force) {
+      const sizeKb = await fetchGithubRepoSizeKb(repo.cloneUrl);
+      if (sizeKb !== null && sizeKb > LARGE_REPO_WARNING_KB) {
+        const proceed = confirm(
+          `"${repo.fullName}" is about ${formatKb(sizeKb)}. Cloning runs entirely in the browser, so a repo this size can take several minutes (or hit browser memory limits). Continue anyway?`,
+        );
+        if (!proceed) return;
+      }
+    }
+
     try {
       setCloningId(repo.id);
 
@@ -113,10 +198,10 @@ export default function GitHubRepositories({ onCloned }: GitHubRepositoriesProps
         throw new Error(data.error || "Failed to create GitHub token");
       }
 
-      await cloneRepository(repo.cloneUrl, data.token, ".", {
-        force,
-        onProgress: setCloneProgress,
-      });
+      await withStallWatchdog(
+        (onProgress) => cloneRepository(repo.cloneUrl, data.token, ".", { force, onProgress }),
+        setCloneProgress,
+      );
 
       pushToast({
         tone: "success",
@@ -126,6 +211,16 @@ export default function GitHubRepositories({ onCloned }: GitHubRepositoriesProps
 
       await onCloned?.(repo);
     } catch (error) {
+      if (error instanceof CloneStalledError) {
+        console.error("Clone stalled:", repo.fullName);
+        pushToast({
+          tone: "error",
+          title: "Clone stalled",
+          description: "No progress for a while, so this was stopped. Large or media-heavy repos can be too slow to clone in-browser — try again, or use a smaller repo.",
+        });
+        return;
+      }
+
       const conflictFiles = (error as { data?: { filepaths?: string[] } })?.data?.filepaths;
 
       if (!force && conflictFiles && conflictFiles.length > 0) {
@@ -165,16 +260,26 @@ export default function GitHubRepositories({ onCloned }: GitHubRepositoriesProps
 
     const { name, fullName } = repoInfoFromUrl(url);
 
+    if (!force) {
+      const sizeKb = await fetchGithubRepoSizeKb(url);
+      if (sizeKb !== null && sizeKb > LARGE_REPO_WARNING_KB) {
+        const proceed = confirm(
+          `"${fullName}" is about ${formatKb(sizeKb)}. Cloning runs entirely in the browser, so a repo this size can take several minutes (or hit browser memory limits). Continue anyway?`,
+        );
+        if (!proceed) return;
+      }
+    }
+
     try {
       setCloningUrl(true);
 
       // No GitHub App / installation token involved — this is a plain,
       // unauthenticated clone, exactly like `git clone <url>`. It only works
       // for public repos; private repos still need a picked repository above.
-      await cloneRepository(url, undefined, ".", {
-        force,
-        onProgress: setCloneProgress,
-      });
+      await withStallWatchdog(
+        (onProgress) => cloneRepository(url, undefined, ".", { force, onProgress }),
+        setCloneProgress,
+      );
 
       pushToast({
         tone: "success",
@@ -185,6 +290,16 @@ export default function GitHubRepositories({ onCloned }: GitHubRepositoriesProps
       setUrlInput("");
       await onCloned?.({ id: -1, name, fullName, cloneUrl: url });
     } catch (error) {
+      if (error instanceof CloneStalledError) {
+        console.error("Clone stalled:", fullName);
+        pushToast({
+          tone: "error",
+          title: "Clone stalled",
+          description: "No progress for a while, so this was stopped. Large or media-heavy repos can be too slow to clone in-browser — try again, or use a smaller repo.",
+        });
+        return;
+      }
+
       const conflictFiles = (error as { data?: { filepaths?: string[] } })?.data?.filepaths;
 
       if (!force && conflictFiles && conflictFiles.length > 0) {

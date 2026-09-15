@@ -341,11 +341,17 @@ export async function cloneRepository(
 
   // A full clone (every branch, full history) means isomorphic-git — a pure-JS
   // git implementation running inside a WebContainer — has to download the
-  // entire object database through a public CORS proxy. For an active repo
-  // that's a lot of data with the UI showing nothing but a spinner, which just
-  // looks hung. Default to a shallow, single-branch clone (what most
-  // browser-based IDEs do) so cloning stays fast; other branches can still be
-  // fetched/checked out afterwards.
+  // entire object database. For an active repo that's a lot of data with the
+  // UI showing nothing but a spinner, which just looks hung. Default to a
+  // shallow, single-branch clone (what most browser-based IDEs do) so cloning
+  // stays fast; other branches can still be fetched/checked out afterwards.
+  //
+  // corsProxy points at our own /api/git-proxy route rather than the public
+  // https://cors.isomorphic-git.org demo proxy: that's a free, shared,
+  // rate-limited community service, and for anything but a tiny repo it's
+  // slow or stalls outright — which is the other big reason clones looked
+  // stuck. This value gets saved into the cloned repo's git config, so
+  // subsequent fetch/pull/push on this remote reuse it automatically.
   const cloneOptions = {
     fs: gitFs,
     http,
@@ -356,7 +362,7 @@ export async function cloneRepository(
     noTags: true,
     onAuth,
     onProgress: options?.onProgress,
-    corsProxy: "https://cors.isomorphic-git.org",
+    corsProxy: "/api/git-proxy",
   };
 
   if (!options?.force) {

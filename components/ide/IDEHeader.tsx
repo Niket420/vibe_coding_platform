@@ -158,7 +158,7 @@ export default function IDEHeader({
   }
 
   return (
-    <div className="flex h-full items-center gap-3 bg-[#000000] px-3 text-[#c9d1d9]">
+    <div className="relative flex h-full items-center gap-3 bg-[#000000] px-3 text-[#c9d1d9]">
       <div className="flex min-w-0 items-center gap-2">
         <span className="grid h-6 w-6 shrink-0 place-items-center rounded bg-white text-[11px] font-bold text-black">
           &lt;/&gt;
@@ -168,7 +168,24 @@ export default function IDEHeader({
         </span>
       </div>
 
-      <div className="flex flex-1 items-center gap-2">
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-24">
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Search files and commands"
+          className="pointer-events-auto flex h-7 w-full max-w-sm items-center justify-between rounded-md border border-[#262626] bg-[#000000] px-2.5 text-[11px] text-[#6e7681] transition hover:border-[#333333] hover:text-[#aeb8c2]"
+        >
+          <span className="flex items-center gap-2">
+            <Search size={12} />
+            Search files, jump to a view…
+          </span>
+          <span className="hidden items-center gap-0.5 rounded border border-[#262626] px-1 text-[10px] sm:flex">
+            <span>⌘</span>K
+          </span>
+        </button>
+      </div>
+
+      <div className="ml-auto flex items-center gap-1">
         <button
           type="button"
           title="AI Assistant"
@@ -185,23 +202,6 @@ export default function IDEHeader({
           <span className="hidden sm:inline">AI</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setPaletteOpen(true)}
-          aria-label="Search files and commands"
-          className="flex h-7 w-full max-w-sm items-center justify-between rounded-md border border-[#262626] bg-[#000000] px-2.5 text-[11px] text-[#6e7681] transition hover:border-[#333333] hover:text-[#aeb8c2]"
-        >
-          <span className="flex items-center gap-2">
-            <Search size={12} />
-            Search files, jump to a view…
-          </span>
-          <span className="hidden items-center gap-0.5 rounded border border-[#262626] px-1 text-[10px] sm:flex">
-            <span>⌘</span>K
-          </span>
-        </button>
-      </div>
-
-      <div className="flex items-center gap-1">
         <button
           type="button"
           title="Terminal"

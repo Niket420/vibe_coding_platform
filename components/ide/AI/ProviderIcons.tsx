@@ -1,7 +1,5 @@
 "use client";
 
-import { useId } from "react";
-
 export type ProviderIconProps = {
   size?: number;
   className?: string;
@@ -109,49 +107,19 @@ export function OllamaIcon({ size = 24, className }: ProviderIconProps) {
   );
 }
 
-// Google's real mark is multicolor, so — unlike the other single-tone brand
-// marks above — this one keeps its native gradient instead of following
-// currentColor. Gradient ids are namespaced per-instance via useId() so
-// multiple renders on one page (provider list, header switcher, etc.)
-// don't collide.
 export function GeminiIcon({ size = 24, className }: ProviderIconProps) {
-  const uid = useId();
-  const gradA = `gemini-a-${uid}`;
-  const gradB = `gemini-b-${uid}`;
-  const gradC = `gemini-c-${uid}`;
-
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} role="img" aria-label="Gemini">
-      <path
-        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
-        fill="#3186FF"
-      />
-      <path
-        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
-        fill={`url(#${gradA})`}
-      />
-      <path
-        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
-        fill={`url(#${gradB})`}
-      />
-      <path
-        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
-        fill={`url(#${gradC})`}
-      />
-      <defs>
-        <linearGradient gradientUnits="userSpaceOnUse" id={gradA} x1="7" x2="11" y1="15.5" y2="12">
-          <stop stopColor="#08B962" />
-          <stop offset="1" stopColor="#08B962" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient gradientUnits="userSpaceOnUse" id={gradB} x1="8" x2="11.5" y1="5.5" y2="11">
-          <stop stopColor="#F94543" />
-          <stop offset="1" stopColor="#F94543" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient gradientUnits="userSpaceOnUse" id={gradC} x1="3.5" x2="17.5" y1="13.5" y2="12">
-          <stop stopColor="#FABC12" />
-          <stop offset=".46" stopColor="#FABC12" stopOpacity="0" />
-        </linearGradient>
-      </defs>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      fillRule="evenodd"
+      className={className}
+      role="img"
+      aria-label="Gemini"
+    >
+      <path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z" />
     </svg>
   );
 }

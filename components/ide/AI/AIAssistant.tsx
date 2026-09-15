@@ -448,7 +448,7 @@ async function handleSend() {
               className="flex min-w-0 items-center gap-1.5 rounded px-1.5 py-1 text-xs transition hover:bg-[#1a1a1a]"
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#3fb950]" />
-              {currentProvider && <currentProvider.icon size={13} className="shrink-0 text-[#a371f7]" />}
+              {currentProvider && <currentProvider.icon size={13} className="shrink-0 text-[#e6edf3]" />}
               <span className="truncate font-medium text-[#e6edf3]">{currentProvider?.name}</span>
               <span className="truncate text-[#6e7681]">· {config.model}</span>
               <ChevronDown size={12} className="shrink-0 text-[#6e7681]" />
@@ -479,7 +479,7 @@ async function handleSend() {
                           <span
                             className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive ? "bg-[#3fb950]" : "bg-transparent"}`}
                           />
-                          <provider.icon size={13} className="shrink-0 text-[#a371f7]" />
+                          <provider.icon size={13} className="shrink-0 text-[#e6edf3]" />
                           <span className={isActive ? "font-medium text-[#e6edf3]" : "text-[#c9d1d9]"}>
                             {provider.name}
                           </span>
