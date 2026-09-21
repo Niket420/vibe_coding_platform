@@ -89,7 +89,14 @@ export function guardCommand(command: string): void {
 }
 
 export function truncateOutput(text: string, limit: number = MAX_COMMAND_OUTPUT_CHARS): string {
-  return text.length > limit ? `${text.slice(0, limit)}\n… (truncated, ${text.length - limit} more characters)` : text;
+  if (text.length <= limit) return text;
+
+  const keep = Math.max(400, Math.floor(limit / 2));
+  const head = text.slice(0, keep);
+  const tail = text.slice(-keep);
+  const omitted = text.length - head.length - tail.length;
+
+  return `${head}\n… (truncated, ${omitted} characters omitted)\n${tail}`;
 }
 
 export const Limits = {

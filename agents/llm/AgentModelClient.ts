@@ -6,7 +6,7 @@ import { getToolSchemas } from "../tools";
 // structurally different tool-call formats (content blocks / functionCall
 // parts) that app/api/ai/chat/route.ts doesn't translate yet — rather than
 // silently mis-behaving, this client refuses those providers outright.
-const TOOL_CALLING_PROVIDERS = new Set(["xai", "groq", "openai", "openrouter", "custom", "local"]);
+const TOOL_CALLING_PROVIDERS = new Set(["xai", "groq", "openai", "openrouter", "custom", "ollama", "local"]);
 
 export function supportsToolCalling(provider: string): boolean {
   return TOOL_CALLING_PROVIDERS.has(provider);

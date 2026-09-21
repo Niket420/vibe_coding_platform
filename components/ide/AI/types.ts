@@ -19,6 +19,7 @@ export type ProviderId =
   | "google"
   | "openrouter"
   | "custom"
+  | "ollama"
   | "local";
 
 export type AIProvider = {
@@ -86,6 +87,16 @@ export const AI_PROVIDERS: AIProvider[] = [
     icon: Cpu,
     models: [],
     supportsCustomEndpoint: true,
+  },
+  {
+    id: "ollama",
+    name: "Ollama",
+    description: "Run a local model directly on your machine",
+    icon: OllamaIcon,
+    models: ["llama3.1", "qwen2.5-coder", "mistral", "deepseek-r1", "phi3"],
+    isLocal: true,
+    supportsCustomEndpoint: true,
+    defaultEndpoint: "http://localhost:11434",
   },
   {
     id: "local",

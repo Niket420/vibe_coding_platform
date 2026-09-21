@@ -2,7 +2,7 @@ import type { Tool } from "../types";
 import { guardPath } from "../executor/Guardrails";
 
 const IGNORED_DIRS = new Set(["node_modules", ".git", ".next", "dist", "build", "coverage"]);
-const MAX_ENTRIES = 500;
+const MAX_ENTRIES = 200;
 
 async function walk(
   webcontainer: import("@webcontainer/api").WebContainer,

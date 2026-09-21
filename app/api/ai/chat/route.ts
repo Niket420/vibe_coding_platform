@@ -35,8 +35,9 @@ const OPENAI_COMPATIBLE_PROVIDERS = new Set([
   "openai",
   "openrouter",
   "custom",
-  "local",
 ]);
+
+const OLLAMA_PROVIDERS = new Set(["ollama", "local"]);
 
 const OPENAI_COMPATIBLE_DEFAULT_ENDPOINTS: Record<string, string> = {
   xai: "https://api.x.ai/v1",
@@ -143,6 +144,67 @@ function googleStreamToOpenAI(body: ReadableStream<Uint8Array>): ReadableStream<
   });
 }
 
+function ollamaStreamToOpenAI(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = "";
+
+  return new ReadableStream({
+    async pull(controller) {
+      const { value, done } = await reader.read();
+
+      if (done) {
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+        return;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const text = line.trim();
+        if (!text) continue;
+
+        try {
+          const event = JSON.parse(text);
+          const chunkText = typeof event?.message?.content === "string" ? event.message.content : "";
+
+          if (chunkText.length > 0) {
+            controller.enqueue(encoder.encode(encoderChunk(chunkText)));
+          }
+        } catch {
+          // Ollama streams newline-delimited JSON chunks; ignore partial data.
+        }
+      }
+    },
+    cancel() {
+      reader.cancel();
+    },
+  });
+}
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 60_000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Request timed out after ${timeoutMs / 1000}s.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function splitSystemPrompt(messages: ChatMessage[]) {
   const system = messages
     .filter((message) => message.role === "system")
@@ -157,24 +219,28 @@ function splitSystemPrompt(messages: ChatMessage[]) {
 async function callAnthropic(apiKey: string, model: string, messages: ChatMessage[]) {
   const { system, conversation } = splitSystemPrompt(messages);
 
-  return fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
+  return fetchWithTimeout(
+    "https://api.anthropic.com/v1/messages",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        ...(system ? { system } : {}),
+        messages: conversation.map((message) => ({
+          role: message.role === "assistant" ? "assistant" : "user",
+          content: message.content,
+        })),
+        stream: true,
+      }),
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4096,
-      ...(system ? { system } : {}),
-      messages: conversation.map((message) => ({
-        role: message.role === "assistant" ? "assistant" : "user",
-        content: message.content,
-      })),
-      stream: true,
-    }),
-  });
+    60_000,
+  );
 }
 
 async function callGoogle(apiKey: string, model: string, messages: ChatMessage[]) {
@@ -184,19 +250,23 @@ async function callGoogle(apiKey: string, model: string, messages: ChatMessage[]
     model,
   )}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
 
-  return fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  return fetchWithTimeout(
+    url,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: conversation.map((message) => ({
+          role: message.role === "assistant" ? "model" : "user",
+          parts: [{ text: message.content }],
+        })),
+        ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+      }),
     },
-    body: JSON.stringify({
-      contents: conversation.map((message) => ({
-        role: message.role === "assistant" ? "model" : "user",
-        parts: [{ text: message.content }],
-      })),
-      ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
-    }),
-  });
+    60_000,
+  );
 }
 
 export async function POST(request: Request) {
@@ -269,7 +339,29 @@ export async function POST(request: Request) {
     let providerResponse: Response;
     let toOpenAIStream: (body: ReadableStream<Uint8Array>) => ReadableStream<Uint8Array> = (body) => body;
 
-    if (OPENAI_COMPATIBLE_PROVIDERS.has(provider)) {
+    if (OLLAMA_PROVIDERS.has(provider)) {
+      const endpoint = (connection.endpoint?.trim() || "http://localhost:11434").replace(/\/+$/, "");
+      const ollamaUrl = `${endpoint}/api/chat`;
+
+      providerResponse = await fetchWithTimeout(
+        ollamaUrl,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages,
+            stream: true,
+            ...(tools && tools.length > 0 ? { tools } : {}),
+          }),
+        },
+        60_000,
+      );
+
+      toOpenAIStream = ollamaStreamToOpenAI;
+    } else if (OPENAI_COMPATIBLE_PROVIDERS.has(provider)) {
       // 6. Use the user's custom endpoint if provided, otherwise the provider's default.
       const endpoint = connection.endpoint?.trim() || OPENAI_COMPATIBLE_DEFAULT_ENDPOINTS[provider];
 
@@ -280,22 +372,26 @@ export async function POST(request: Request) {
         );
       }
 
-      providerResponse = await fetch(`${endpoint}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      providerResponse = await fetchWithTimeout(
+        `${endpoint}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+          },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages,
+            stream: true,
+            // Only meaningful for this OpenAI-shaped group — Anthropic/Google
+            // below use structurally different tool-call formats this route
+            // doesn't translate yet, so tools are intentionally not forwarded there.
+            ...(tools && tools.length > 0 ? { tools } : {}),
+          }),
         },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages,
-          stream: true,
-          // Only meaningful for this OpenAI-shaped group — Anthropic/Google
-          // below use structurally different tool-call formats this route
-          // doesn't translate yet, so tools are intentionally not forwarded there.
-          ...(tools && tools.length > 0 ? { tools } : {}),
-        }),
-      });
+        60_000,
+      );
     } else if (provider === "anthropic") {
       providerResponse = await callAnthropic(apiKey, selectedModel, messages);
       toOpenAIStream = anthropicStreamToOpenAI;
@@ -319,9 +415,16 @@ export async function POST(request: Request) {
         errorText
       );
 
+      const providerError =
+        providerResponse.status === 401 || providerResponse.status === 403
+          ? "The API key is invalid or expired. Please reconfigure this provider with a fresh key."
+          : providerResponse.status === 429
+            ? "The provider rate limit was hit. Please wait and try again."
+            : "AI provider request failed.";
+
       return NextResponse.json(
         {
-          error: "AI provider request failed.",
+          error: providerError,
           providerStatus: providerResponse.status,
         },
         { status: 502 }

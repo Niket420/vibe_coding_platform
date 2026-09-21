@@ -284,11 +284,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <footer className="flex h-6 shrink-0 items-center justify-between bg-[#f5f5f5] px-3 text-[10px] font-medium text-black">
-          <span className="flex items-center gap-1.5"><GitBranch size={12} /> main</span>
-          <span className="hidden sm:inline">CodeForge workspace</span>
-          <span>Ln 1, Col 1</span>
-        </footer>
       </div>
 
       <TemplateSelector

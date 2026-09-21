@@ -71,7 +71,11 @@ export default function AIProviderSettings({
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to save AI provider");
+        const rawError = typeof data?.error === "string" ? data.error : "Failed to save AI provider";
+        const normalizedError = /expired|invalid|401|403/i.test(rawError)
+          ? "Your API key appears to be invalid or expired. Please re-enter a fresh key."
+          : rawError;
+        throw new Error(normalizedError);
       }
 
       onConnect({
