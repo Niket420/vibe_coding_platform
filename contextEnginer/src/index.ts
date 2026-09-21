@@ -4,6 +4,7 @@
 // that can't run in a browser tab. Import it directly from
 // "./scanner/FileScanner" if you need it for server-side/CLI use.
 export { WebContainerFileScanner } from "./scanner/WebContainerFileScanner";
+export { statPath } from "./scanner/webcontainerFs";
 export type { SourceFile, ParsedFile, ParsedSymbol, SourceRange } from "./types";
 
 export { CodeParser, parseFile } from "./parser/Parser";

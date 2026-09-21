@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { WebContainer } from "@webcontainer/api";
 import {
+  Bot,
   ChevronDown,
   Loader2,
   MessageSquarePlus,
@@ -22,6 +23,7 @@ import { AI_PROVIDERS, type ChatMessage, type ContextMode, type ProviderConfig }
 import { gatherContext, type OpenFile } from "./contextGather";
 import { useToast } from "@/components/ui/toast";
 import type { FileTreeNode } from "@/types/file-tree";
+import { Agent, supportsToolCalling, type AgentEvent, type ToolCallRequest, type ToolResult } from "@/agents";
 
 type AIAssistantProps = {
   activeFilePath?: string;
@@ -35,6 +37,29 @@ let messageCounter = 0;
 function nextMessageId() {
   messageCounter += 1;
   return `msg-${Date.now()}-${messageCounter}`;
+}
+
+function describeToolCall(call: ToolCallRequest): string {
+  const args = call.arguments;
+
+  switch (call.name) {
+    case "read_file":
+      return `Reading ${String(args.path ?? "")}`;
+    case "write_file":
+      return `Writing ${String(args.path ?? "")}`;
+    case "delete_file":
+      return `Deleting ${String(args.path ?? "")}`;
+    case "create_directory":
+      return `Creating directory ${String(args.path ?? "")}`;
+    case "list_directory":
+      return `Listing ${String(args.path ?? ".")}`;
+    case "run_command": {
+      const cmdArgs = Array.isArray(args.args) ? args.args.join(" ") : "";
+      return `Running ${String(args.command ?? "")} ${cmdArgs}`.trim();
+    }
+    default:
+      return call.name;
+  }
 }
 
 function contextLabel(mode: ContextMode, activeFilePath?: string, selectedCode?: string) {
@@ -73,6 +98,7 @@ export default function AIAssistant({
   const [isGenerating, setIsGenerating] = useState(false);
   const [contextMode, setContextMode] = useState<ContextMode>("current-file");
   const [inputFocusToken, setInputFocusToken] = useState(0);
+  const [agentMode, setAgentMode] = useState(false);
 
   const replyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -131,6 +157,12 @@ export default function AIAssistant({
   }, [pushToast]);
 
   const currentProvider = config ? AI_PROVIDERS.find((p) => p.id === config.providerId) : undefined;
+  const agentCapable = config ? supportsToolCalling(config.providerId) : false;
+
+  useEffect(() => {
+    if (!agentCapable) setAgentMode(false);
+  }, [agentCapable]);
+
   const pendingProvider = pendingProviderId
     ? AI_PROVIDERS.find((p) => p.id === pendingProviderId)
     : undefined;
@@ -211,6 +243,56 @@ async function handleSend() {
       selectedCode,
       query: text,
     });
+
+    if (agentMode) {
+      if (!webcontainer) throw new Error("Workspace isn't ready yet.");
+
+      let transcript = "";
+      const appendToTranscript = (fragment: string) => {
+        transcript += fragment;
+        setMessages((previous) =>
+          previous.map((message) => (message.id === assistantId ? { ...message, content: transcript } : message)),
+        );
+      };
+
+      const agent = new Agent({
+        webcontainer,
+        provider: { provider: config.providerId, model: config.model },
+        onEvent: (event: AgentEvent) => {
+          switch (event.type) {
+            case "text":
+              appendToTranscript(event.delta);
+              break;
+            case "tool-call":
+              appendToTranscript(`\n\n> ${describeToolCall(event.call)}`);
+              break;
+            case "approval-resolved":
+              appendToTranscript(event.approved ? " (approved)" : " (denied)");
+              break;
+            case "tool-result": {
+              const result: ToolResult = event.result;
+              if (result.success) {
+                appendToTranscript(" — done");
+              } else if (result.error !== "The user did not approve this action.") {
+                appendToTranscript(` — failed: ${result.error ?? "unknown error"}`);
+              }
+              break;
+            }
+            case "error":
+              appendToTranscript(`\n\nError: ${event.message}`);
+              break;
+          }
+        },
+        requestApproval: async (request) => window.confirm(`${request.reason}\n\nAllow this action?`),
+      });
+
+      // Each agent task starts fresh (system prompt + retrieved context + this
+      // one task) rather than threading the whole chat history through the
+      // tool-calling loop — the loop already accumulates its own back-and-forth
+      // for this task internally.
+      await agent.run(text, contextContent || undefined);
+      return;
+    }
 
     const requestMessages = [
       ...(contextContent
@@ -334,6 +416,24 @@ async function handleSend() {
 
         {config && !pendingProviderId && !pickerOpen && (
           <div className="flex items-center gap-0.5 text-[#8b949e]">
+            <button
+              type="button"
+              title={
+                agentCapable
+                  ? agentMode
+                    ? "Agent mode on — can edit files and run commands"
+                    : "Turn on Agent mode (can edit files and run commands)"
+                  : "Agent mode isn't available for this provider yet"
+              }
+              aria-pressed={agentMode}
+              disabled={!agentCapable}
+              onClick={() => setAgentMode((mode) => !mode)}
+              className={`grid h-6 w-6 place-items-center rounded transition disabled:cursor-not-allowed disabled:opacity-30 ${
+                agentMode ? "bg-[#1a1a1a] text-[#e6edf3]" : "hover:bg-[#262626] hover:text-white"
+              }`}
+            >
+              <Bot size={14} />
+            </button>
             <button
               type="button"
               title="New conversation"

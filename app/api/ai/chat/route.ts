@@ -5,8 +5,25 @@ import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
 
 type ChatMessage = {
-  role: "system" | "user" | "assistant";
-  content: string;
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  tool_call_id?: string;
+  tool_calls?: Array<{
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }>;
+};
+
+// OpenAI-shaped function-calling tool definitions, forwarded as-is to
+// providers that speak that protocol (see OPENAI_COMPATIBLE_PROVIDERS below).
+type ToolDefinition = {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
 };
 
 // Providers whose API already speaks the OpenAI chat-completions shape,
@@ -201,10 +218,12 @@ export async function POST(request: Request) {
       provider,
       model,
       messages,
+      tools,
     }: {
       provider?: string;
       model?: string;
       messages?: ChatMessage[];
+      tools?: ToolDefinition[];
     } = body;
 
     if (!provider) {
@@ -271,6 +290,10 @@ export async function POST(request: Request) {
           model: selectedModel,
           messages,
           stream: true,
+          // Only meaningful for this OpenAI-shaped group — Anthropic/Google
+          // below use structurally different tool-call formats this route
+          // doesn't translate yet, so tools are intentionally not forwarded there.
+          ...(tools && tools.length > 0 ? { tools } : {}),
         }),
       });
     } else if (provider === "anthropic") {
