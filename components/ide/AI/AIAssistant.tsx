@@ -291,11 +291,15 @@ async function handleSend() {
         requestApproval: async (request) => window.confirm(`${request.reason}\n\nAllow this action?`),
       });
 
-      // Each agent task starts fresh (system prompt + retrieved context + this
-      // one task) rather than threading the whole chat history through the
-      // tool-calling loop — the loop already accumulates its own back-and-forth
-      // for this task internally.
-      await agent.run(text, contextContent || undefined);
+      // Send the full prior conversation, same as chat mode, so follow-ups
+      // like "yes" or "now add tax" have something to refer to. Tool-call
+      // back-and-forth from earlier runs isn't replayed — the loop rebuilds
+      // that per task.
+      const history = messages
+        .filter((message) => (message.role === "user" || message.role === "assistant") && message.content.trim())
+        .map((message) => ({ role: message.role as "user" | "assistant", content: message.content }));
+
+      await agent.run(text, contextContent || undefined, history);
       return;
     }
 
