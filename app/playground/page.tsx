@@ -441,6 +441,7 @@ export default function PlaygroundPage() {
                     openedFiles={openedFiles}
                     fileTree={fileTree}
                     selectedCode={selectedCode}
+                    onWorkspaceChange={() => refreshFileTree(webcontainer)}
                   />
                 </Panel>
               </>

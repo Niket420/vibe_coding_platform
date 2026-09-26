@@ -31,6 +31,7 @@ type AIAssistantProps = {
   openedFiles?: OpenFile[];
   fileTree?: FileTreeNode[];
   selectedCode?: string;
+  onWorkspaceChange?: () => Promise<void>;
 };
 
 let messageCounter = 0;
@@ -83,6 +84,7 @@ export default function AIAssistant({
   openedFiles = [],
   fileTree = [],
   selectedCode = "",
+  onWorkspaceChange,
 }: AIAssistantProps) {
   const { push: pushToast } = useToast();
   const [config, setConfig] = useState<ProviderConfig | null>(null);
@@ -273,6 +275,9 @@ async function handleSend() {
               const result: ToolResult = event.result;
               if (result.success) {
                 appendToTranscript(" — done");
+                if (["write_file", "delete_file", "create_directory"].includes(event.call.name)) {
+                  void onWorkspaceChange?.();
+                }
               } else if (result.error !== "The user did not approve this action.") {
                 appendToTranscript(` — failed: ${result.error ?? "unknown error"}`);
               }

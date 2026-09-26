@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
+import { acquireAiRequestLease, AiRequestPolicyError } from "@/lib/ai/requestPolicy";
 
 type ChatMessage = {
   role: "system" | "user" | "assistant" | "tool";
@@ -197,12 +198,79 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 6
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(`Request timed out after ${timeoutMs / 1000}s.`);
+      const timeoutError = new Error(`Request timed out after ${timeoutMs / 1000}s.`);
+      timeoutError.name = "TimeoutError";
+      throw timeoutError;
     }
     throw error;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchWithRetry(url: string, options: RequestInit, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetchWithTimeout(url, options);
+
+      if (attempt === maxAttempts || ![408, 429, 500, 502, 503, 504].includes(response.status)) {
+        return response;
+      }
+
+      await response.body?.cancel();
+
+      const retryAfter = Number(response.headers.get("retry-after"));
+      const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : Math.min(8_000, 1_000 * 2 ** (attempt - 1));
+
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    } catch (error) {
+      if (error instanceof Error && error.name === "TimeoutError") throw error;
+      if (attempt === maxAttempts) throw error;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(8_000, 1_000 * 2 ** (attempt - 1))));
+    }
+  }
+
+  throw new Error("AI provider request failed after retries.");
+}
+
+function releaseAfterStream(
+  body: ReadableStream<Uint8Array>,
+  release: () => void,
+  onComplete: (status: "completed" | "failed") => void,
+): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  let released = false;
+  const releaseOnce = () => {
+    if (released) return;
+    released = true;
+    release();
+  };
+
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const result = await reader.read();
+        if (result.done) {
+          releaseOnce();
+          onComplete("completed");
+          controller.close();
+          return;
+        }
+        controller.enqueue(result.value);
+      } catch (error) {
+        releaseOnce();
+        onComplete("failed");
+        controller.error(error);
+      }
+    },
+    cancel() {
+      releaseOnce();
+      onComplete("failed");
+      return reader.cancel();
+    },
+  });
 }
 
 function splitSystemPrompt(messages: ChatMessage[]) {
@@ -219,7 +287,7 @@ function splitSystemPrompt(messages: ChatMessage[]) {
 async function callAnthropic(apiKey: string, model: string, messages: ChatMessage[]) {
   const { system, conversation } = splitSystemPrompt(messages);
 
-  return fetchWithTimeout(
+  return fetchWithRetry(
     "https://api.anthropic.com/v1/messages",
     {
       method: "POST",
@@ -239,7 +307,6 @@ async function callAnthropic(apiKey: string, model: string, messages: ChatMessag
         stream: true,
       }),
     },
-    60_000,
   );
 }
 
@@ -250,7 +317,7 @@ async function callGoogle(apiKey: string, model: string, messages: ChatMessage[]
     model,
   )}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
 
-  return fetchWithTimeout(
+  return fetchWithRetry(
     url,
     {
       method: "POST",
@@ -265,11 +332,14 @@ async function callGoogle(apiKey: string, model: string, messages: ChatMessage[]
         ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
       }),
     },
-    60_000,
   );
 }
 
 export async function POST(request: Request) {
+  let releaseLease: (() => void) | undefined;
+  let usageEventId: string | undefined;
+  let usageStartedAt = 0;
+
   try {
     // 1. Identify the logged-in CodeForge user
     const { userId } = await auth();
@@ -310,6 +380,8 @@ export async function POST(request: Request) {
       );
     }
 
+    releaseLease = await acquireAiRequestLease(userId);
+
     // 3. Find this user's saved provider configuration
     const connection = await prisma.aIProviderConnection.findUnique({
       where: {
@@ -335,6 +407,32 @@ export async function POST(request: Request) {
 
     // 5. Determine which model to use
     const selectedModel = model?.trim() || connection.model;
+    usageStartedAt = Date.now();
+
+    try {
+      const usageEvent = await prisma.aIUsageEvent.create({
+        data: {
+          clerkUserId: userId,
+          provider,
+          model: selectedModel,
+          status: "started",
+        },
+        select: { id: true },
+      });
+      usageEventId = usageEvent.id;
+    } catch (error) {
+      console.error("AI usage event could not be recorded:", error);
+    }
+
+    const completeUsage = (status: "completed" | "failed") => {
+      if (!usageEventId) return;
+      void prisma.aIUsageEvent.update({
+        where: { id: usageEventId },
+        data: { status, durationMs: Date.now() - usageStartedAt },
+      }).catch((error) => {
+        console.error("AI usage event could not be updated:", error);
+      });
+    };
 
     let providerResponse: Response;
     let toOpenAIStream: (body: ReadableStream<Uint8Array>) => ReadableStream<Uint8Array> = (body) => body;
@@ -343,7 +441,7 @@ export async function POST(request: Request) {
       const endpoint = (connection.endpoint?.trim() || "http://localhost:11434").replace(/\/+$/, "");
       const ollamaUrl = `${endpoint}/api/chat`;
 
-      providerResponse = await fetchWithTimeout(
+      providerResponse = await fetchWithRetry(
         ollamaUrl,
         {
           method: "POST",
@@ -357,7 +455,6 @@ export async function POST(request: Request) {
             ...(tools && tools.length > 0 ? { tools } : {}),
           }),
         },
-        60_000,
       );
 
       toOpenAIStream = ollamaStreamToOpenAI;
@@ -372,7 +469,7 @@ export async function POST(request: Request) {
         );
       }
 
-      providerResponse = await fetchWithTimeout(
+      providerResponse = await fetchWithRetry(
         `${endpoint}/chat/completions`,
         {
           method: "POST",
@@ -390,7 +487,6 @@ export async function POST(request: Request) {
             ...(tools && tools.length > 0 ? { tools } : {}),
           }),
         },
-        60_000,
       );
     } else if (provider === "anthropic") {
       providerResponse = await callAnthropic(apiKey, selectedModel, messages);
@@ -407,6 +503,9 @@ export async function POST(request: Request) {
 
     // 7. Handle provider errors
     if (!providerResponse.ok) {
+      releaseLease?.();
+      releaseLease = undefined;
+      completeUsage("failed");
       const errorText = await providerResponse.text();
 
       console.error(
@@ -433,6 +532,9 @@ export async function POST(request: Request) {
 
     // 8. Make sure the provider returned a stream
     if (!providerResponse.body) {
+      releaseLease?.();
+      releaseLease = undefined;
+      completeUsage("failed");
       return NextResponse.json(
         {
           error: "AI provider returned no response stream.",
@@ -442,7 +544,14 @@ export async function POST(request: Request) {
     }
 
     // 9. Forward the (possibly translated) stream to the browser
-    return new Response(toOpenAIStream(providerResponse.body), {
+    const stream = releaseAfterStream(
+      toOpenAIStream(providerResponse.body),
+      releaseLease,
+      completeUsage,
+    );
+    releaseLease = undefined;
+
+    return new Response(stream, {
       status: 200,
       headers: {
         "Content-Type": "text/event-stream",
@@ -451,6 +560,26 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    releaseLease?.();
+    if (usageEventId) {
+      void prisma.aIUsageEvent.update({
+        where: { id: usageEventId },
+        data: { status: "failed", durationMs: Date.now() - usageStartedAt },
+      }).catch((updateError) => {
+        console.error("AI usage event could not be updated:", updateError);
+      });
+    }
+
+    if (error instanceof AiRequestPolicyError) {
+      return NextResponse.json(
+        { error: error.message },
+        {
+          status: 429,
+          headers: { "Retry-After": String(error.retryAfterSeconds) },
+        },
+      );
+    }
+
     // 10. Handle unexpected server errors
     console.error("AI chat error:", error);
 

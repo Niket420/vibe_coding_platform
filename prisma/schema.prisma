@@ -34,3 +34,16 @@ model AIProviderConnection {
 
   @@unique([clerkUserId, provider])
 }
+
+model AIUsageEvent {
+  id          String   @id @default(cuid())
+  clerkUserId String
+  provider    String
+  model       String
+  status      String
+  durationMs  Int?
+  createdAt   DateTime @default(now())
+
+  @@index([clerkUserId, createdAt])
+  @@index([provider, createdAt])
+}
